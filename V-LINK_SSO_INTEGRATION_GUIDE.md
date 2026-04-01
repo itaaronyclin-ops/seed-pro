@@ -5,7 +5,7 @@ V-Link SSO 是一套基於 QR Code 的中心化驗證系統。它允許使用者
 
 ## 2. 串接準備
 串接前，您需要取得以下資訊：
-- **SSO 腳本網址 (SSO_URL)**：`https://script.google.com/macros/s/AKfycbwdcARr75wny_g3g45kCCF2KyclkYuSZL_gTyXNAtX1zot8f3r2lSs6U3OmdjQV4YUc7Q/exec`
+- **SSO 腳本網址 (SSO_URL)**：`https://script.google.com/macros/s/AKfycbzp5XR3Z0Pd5NA1U36v8t0kTxkXQ-rpnyMYugUWQuW7B7eRbUw48wqvUB7B4raq_KsvxQ/exec`
 - **系統代碼 (SYSTEM_ID)**：建議設為 `seed_pro` (主系統) 或根據子系統需求設定。
 
 ---
@@ -49,7 +49,7 @@ V-Link SSO 是一套基於 QR Code 的中心化驗證系統。它允許使用者
 
 ```javascript
 // --- 1. 初始化 ---
-const ssoUrl = "https://script.google.com/macros/s/AKfycbwdcARr75wny_g3g45kCCF2KyclkYuSZL_gTyXNAtX1zot8f3r2lSs6U3OmdjQV4YUc7Q/exec";
+const ssoUrl = "https://script.google.com/macros/s/AKfycbzp5XR3Z0Pd5NA1U36v8t0kTxkXQ-rpnyMYugUWQuW7B7eRbUw48wqvUB7B4raq_KsvxQ/exec";
 const resp = await fetch(ssoUrl + "?action=init_session");
 const { qrToken } = await resp.json();
 
