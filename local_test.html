@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>API 連線測試 (Local Debug)</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .box {
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #2d3436;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="box">
+        <h3>🔗 API 連線與 CORS 測試</h3>
+        <p>請輸入您的 Google Apps Script Web App URL，點擊測試按鈕。</p>
+
+        <label><strong>API URL:</strong></label>
+        <input type="text" id="apiUrl" value="" placeholder="https://script.google.com/macros/s/..../exec">
+
+        <button onclick="testConnection()">開始測試 (Test Connection)</button>
+
+        <div id="result">測試結果將顯示於此...</div>
+    </div>
+
+    <!-- 載入 Adapter 用於讀取預設 URL (如果有的話) -->
+    <script src="tms-api-adapter.js"></script>
+
+    <script>
+        // 預填 Adapter 中的 URL
+        if (typeof GAS_API_URL !== 'undefined' && !GAS_API_URL.includes("您的")) {
+            document.getElementById('apiUrl').value = GAS_API_URL;
+        }
+
+        async function testConnection() {
+            const url = document.getElementById('apiUrl').value.trim();
+            const resBox = document.getElementById('result');
+
+            if (!url) return alert("請輸入 URL");
+
+            resBox.innerHTML = "⏳ 連線中... (Sending Request)";
+            resBox.className = "";
+
+            try {
+                // 1. 嘗試發送簡單請求
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "checkAdminLogin", args: ["test", "test"] })
+                });
+
+                // 2. 檢查 HTTP 狀態
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+                }
+
+                // 3. 嘗試讀取內容
+                const text = await response.text();
+                console.log("Raw Response:", text);
+
+                // 4. 嘗試解析 JSON
+                let json;
+                try {
+                    json = JSON.parse(text);
+                } catch (e) {
+                    // 如果是 HTML，通常代表 URL 錯誤或權限不足
+                    if (text.includes("<!DOCTYPE html>")) {
+                        throw new Error("回傳了 HTML 頁面而非 JSON。這通常代表：\n1. URL 錯誤 (404 Not Found)\n2. 部署權限未設為「任何人 (Anyone)」\n3. 腳本發生錯誤");
+                    }
+                    throw new Error("無法解析 JSON: " + e.message + "\n內容: " + text.substring(0, 100) + "...");
+                }
+
+                // 5. 成功
+                resBox.innerHTML = `<strong class="success">✅ 連線成功 (Success)</strong>\n\nAPI 回傳:\n${JSON.stringify(json, null, 2)}`;
+                resBox.className = "success";
+
+            } catch (err) {
+                console.error(err);
+                resBox.innerHTML = `<strong class="error">❌ 連線失敗 (Failed)</strong>\n\n錯誤訊息:\n${err.message}`;
+                resBox.className = "error";
+
+                if (err.message.includes("Failed to fetch")) {
+                    resBox.innerHTML += `\n\n常見原因：\n1. URL 錯誤\n2. CORS 被瀏覽器阻擋 (Google 重新導向問題)\n3. 網路問題`;
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

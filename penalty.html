@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>違規管理 | TMS Pro+</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* === Modern Elegant White Theme (Aligned with index.html) === */
+        :root {
+            --primary-dark: #2d3436;
+            --primary-bg: #fcfcfc;
+            --text-main: #2d3436;
+            --text-muted: #636e72;
+            --card-shadow: 0 2px 15px rgba(0, 0, 0, 0.03);
+            --accent-blue: #0984e3;
+            --accent-green-bg: #e6fffa;
+            --accent-green-text: #00b894;
+            --accent-red-bg: #fff5f5;
+            --accent-red-text: #e17055;
+            --border-color: #f0f0f0;
+        }
+
+        body {
+            background-color: var(--primary-bg);
+            color: var(--text-main);
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+            font-size: 0.92rem;
+            letter-spacing: 0.3px;
+            min-height: 100vh;
+        }
+
+        .header-section {
+            padding: 40px 0;
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 40px;
+        }
+
+        .card {
+            border: 1px solid #f9f9f9;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            background: #ffffff;
+            margin-bottom: 24px;
+            transition: all 0.2s;
+        }
+
+        .card-header {
+            background: none;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.5rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+        }
+
+        .form-control,
+        .form-select {
+            background-color: #fbfbfb;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            color: var(--primary-dark);
+            transition: all 0.2s;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background-color: #fff;
+            border-color: var(--primary-dark);
+            box-shadow: 0 0 0 2px rgba(45, 52, 54, 0.05);
+        }
+
+        .btn-elegant {
+            background-color: var(--primary-dark);
+            color: white;
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-weight: 600;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-elegant:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            color: white;
+        }
+
+        .table thead th {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #b2bec3;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 15px;
+            border: none;
+        }
+
+        .table tbody td {
+            padding: 15px;
+            vertical-align: middle;
+            border-top: 1px solid #f8f9fa;
+        }
+
+        .agcode-tag {
+            font-family: 'Consolas', monospace;
+            background: var(--accent-gray-bg, #f1f2f6);
+            color: var(--primary-dark);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .badge-active {
+            background-color: var(--accent-red-bg);
+            color: var(--accent-red-text);
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        .lux-toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .lux-toast.show {
+            transform: translateX(0);
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .modal-content {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.5rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loading">
+        <div class="spinner-border text-dark mb-3"></div>
+        <div class="fw-bold">正在處理資料...</div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <header class="header-section">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-800 mb-0">違規管理</h3>
+                <div class="text-sub">TMS Pro+ Discipline Monitoring System</div>
+            </div>
+            <a href="index.html" class="btn btn-outline-dark rounded-pill px-4 fw-600">
+                <i class="bi bi-house-door me-2"></i> 返回後台
+            </a>
+        </div>
+    </header>
+
+    <div class="container pb-5">
+        <div class="row g-4">
+            <!-- Left: Quick Actions & Stats -->
+            <div class="col-lg-4">
+                <div class="card p-4 text-center">
+                    <div class="p-4 rounded-4 bg-danger bg-opacity-10 mb-4">
+                        <i class="bi bi-patch-exclamation-fill text-danger" style="font-size: 3rem;"></i>
+                    </div>
+                    <h4 class="fw-800 mb-3">發布處分</h4>
+                    <p class="text-muted small mb-4">請確保違規事實與處置措施填寫完整。</p>
+                    <button class="btn btn-elegant w-100 py-3 rounded-pill" onclick="openAddPenaltyModal()">
+                        <i class="bi bi-plus-circle-fill me-2"></i> 新增處分
+                    </button>
+                </div>
+
+                <div class="card p-4 mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-0">
+                        <h6 class="fw-800 mb-0">現行狀態統計</h6>
+                        <span class="badge rounded-pill bg-danger" id="activeCountTotal">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Lists and Query -->
+            <div class="col-lg-8">
+                <!-- Active List -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="fw-800 mb-0">現行處罰名單 (Active)</h5>
+                        <span class="badge rounded-pill bg-danger" id="activeCount">0</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>AGCODE</th>
+                                    <th>姓名</th>
+                                    <th>類別</th>
+                                    <th>日期</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activePenaltyListBody">
+                                <tr>
+                                    <td colspan="4" class="text-center p-5 text-muted small">資料載入中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Query Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="fw-800 mb-0">處分紀錄查詢 (Penalty Query)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group mb-4">
+                            <input type="text" id="queryAgcode" class="form-control" placeholder="輸入 AGCODE 搜尋..."
+                                list="pen-people-list">
+                            <button class="btn btn-elegant" onclick="queryPersonPenalties()">查詢紀錄</button>
+                        </div>
+
+                        <div id="queryResultArea" style="display: none;">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>AGCODE</th>
+                                            <th>姓名</th>
+                                            <th>類別</th>
+                                            <th>日期</th>
+                                            <th class="text-end">詳細</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="queryPenaltyListBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Screen Ticket Modal -->
+    <div class="modal fade" id="ticketModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header px-5 py-4 border-0">
+                    <h3 class="modal-title fw-800"><i class="bi bi-shield-lock me-3"></i>罰單詳情</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body px-5">
+                    <div class="container py-4" style="max-width: 900px;">
+                        <div class="d-flex justify-content-between align-items-start mb-5 pb-4 border-bottom">
+                            <div>
+                                <div class="form-label mb-2">AG</div>
+                                <div class="display-6 fw-800 text-dark mb-0"><span id="ticket-name">---</span> (<span
+                                        id="ticket-agcode">---</span>)</div>
+                            </div>
+                            <div id="ticket-status-area" class="h4"></div>
+                        </div>
+
+                        <div class="row g-4 mb-5">
+                            <div class="col-md-6">
+                                <div class="p-4 rounded-4 bg-light">
+                                    <div class="form-label mb-2">違規類別 (Category)</div>
+                                    <div class="h4 fw-800 mb-0" id="ticket-category">---</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-4 rounded-4 bg-light">
+                                    <div class="form-label mb-2">違規日期 (Violation Date)</div>
+                                    <div class="h4 fw-800 mb-0" id="ticket-date">---</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <h5 class="fw-800 mb-3"><i class="bi bi-info-circle me-2"></i>違規事實 (Official Fact)</h5>
+                            <div class="p-4 rounded-4 border bg-white fs-5 lh-lg" id="ticket-reason"
+                                style="white-space: pre-wrap;"></div>
+                        </div>
+
+                        <div class="mb-5">
+                            <h5 class="fw-800 mb-3"><i class="bi bi-hammer me-2"></i>處置措施 (Execution Measure)</h5>
+                            <div class="p-4 rounded-4 bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 h4 fw-800 mb-0"
+                                id="ticket-method"></div>
+                        </div>
+
+                        <!-- Audit Section -->
+                        <div id="ticket-actions-area">
+                            <hr class="my-5">
+                            <div class="bg-light p-5 rounded-4">
+                                <h5 class="fw-800 mb-4">驗證</h5>
+                                <div class="mb-4">
+                                    <label class="form-label fw-800">操作權限AGCODE</label>
+                                    <input type="text" id="opAgcode" class="form-control form-control-lg border-2"
+                                        placeholder="輸入您的 AGCODE 驗證身份..." oninput="checkOperator()">
+                                    <div id="opDisplay" class="mt-2 h6 fw-800"></div>
+                                </div>
+                                <div class="d-flex gap-3 mt-4">
+                                    <button class="btn btn-success flex-grow-1 py-3 fw-bold rounded-pill fs-5"
+                                        onclick="handleTicketAction('complete')">核：處罰完成</button>
+                                    <button class="btn btn-outline-danger flex-grow-1 py-3 fw-bold rounded-pill fs-5"
+                                        onclick="handleTicketAction('delete')">核：撤銷處罰</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="ticket-audit-info" style="display: none;">
+                            <hr class="my-5">
+                            <div class="p-4 rounded-4 bg-light d-flex align-items-center gap-4">
+                                <div class="bg-white p-3 rounded-circle shadow-sm">
+                                    <i class="bi bi-person-check-fill text-success fs-3"></i>
+                                </div>
+                                <div>
+                                    <div class="text-muted small fw-bold mb-1">FINAL AUDIT BY</div>
+                                    <div class="h5 fw-800 mb-0"><span id="audit-op-name" class="text-dark">---</span>
+                                    </div>
+                                    <div class="text-muted small mt-1">紀錄時間：<span id="audit-op-date">---</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Screen Add Penalty Modal -->
+    <div class="modal fade" id="addPenaltyModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header px-5 py-4 border-0">
+                    <h3 class="modal-title fw-800"><i class="bi bi-patch-exclamation-fill me-3 text-danger"></i>發布處分
+                    </h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body px-5">
+                    <div class="container py-4" style="max-width: 900px;">
+                        <form id="addPenaltyForm" onsubmit="handleAddPenalty(event)">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-800">受處分人AGCODE</label>
+                                    <input type="text" id="penAgcode" class="form-control form-control-lg border-2"
+                                        placeholder="輸入AGCODE" list="pen-people-list" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-800">違規日期 (Violation Date)</label>
+                                    <input type="date" id="penDate" class="form-control form-control-lg border-2"
+                                        required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-800">違規類別 (Category)</label>
+                                    <select id="penCategory" class="form-select form-select-lg border-2">
+                                        <option value="缺席">缺席 (Absent)</option>
+                                        <option value="其它">其它 (Other)</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-800">違規事實摘要 (Detailed Reason)</label>
+                                    <textarea id="penReason" class="form-control border-2" rows="8"
+                                        placeholder="請詳細具體描述違規事實..." required></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-800">執行處置與措施 (Execution Measure)</label>
+                                    <input type="text" id="penMethod" class="form-control form-control-lg border-2"
+                                        placeholder="例如：記點、申誡、警告、停權..." required>
+                                </div>
+                                <div class="col-12 pt-4">
+                                    <button type="submit" class="btn btn-elegant w-100 py-3 fs-4 rounded-pill shadow">
+                                        確認 <i class="bi bi-check-lg ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <datalist id="pen-people-list"></datalist>
+
+    <!-- Logic -->
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz4kiWGCG96zZHAJgc-wOAaCxOkS7WXf5IriAEKk0StXYFNVlME7x2SjaSva3Rp8obX/exec';
+
+        const gas = {
+            run: function (cbName) {
+                const self = this;
+                return {
+                    getReportData: () => self.call('getReportData', [], cbName),
+                    getPenalties: () => self.call('getPenalties', [], cbName),
+                    managePenalty: (op, data) => self.call('managePenalty', [op, data], cbName)
+                }
+            },
+            call: function (action, args, cbName) {
+                fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: action, args: args })
+                })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (window[cbName]) window[cbName](res);
+                    })
+                    .catch(err => {
+                        console.error("API Error:", err);
+                        if (window.load) window.load(false);
+                        if (window.showToast) window.showToast("連線失敗: " + err.toString(), "error");
+                    });
+            }
+        };
+
+        let db = { people: [] };
+        let allPenalties = [];
+
+        function load(x) {
+            document.getElementById('loading').style.display = x ? 'flex' : 'none';
+        }
+
+        function showToast(m, t = 'info') {
+            const c = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `lux-toast ${t}`;
+            toast.innerHTML = `<i class="bi bi-info-circle-fill fs-4 text-primary"></i><div class="fw-bold">${m}</div>`;
+            c.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 3500);
+        }
+
+        window.onload = () => {
+            load(true);
+            window.onInit = (d) => {
+                if (d.people) {
+                    db = d;
+                    document.getElementById('pen-people-list').innerHTML = d.people.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                }
+                load(false);
+                loadPenalties(true);
+            };
+            gas.run('onInit').getReportData();
+        };
+
+        function openAddPenaltyModal() {
+            document.getElementById('addPenaltyForm').reset();
+            document.getElementById('penDate').valueAsDate = new Date();
+            new bootstrap.Modal(document.getElementById('addPenaltyModal')).show();
+        }
+
+        function loadPenalties(silent = false) {
+            const tb = document.getElementById('activePenaltyListBody');
+            window.onPenalties = (res) => {
+                if (res.success) {
+                    allPenalties = res.penalties;
+                    const active = res.penalties.filter(p => !p.status || p.status === 'Active');
+                    document.getElementById('activeCount').innerText = active.length;
+                    document.getElementById('activeCountTotal').innerText = active.length;
+                    if (active.length === 0) {
+                        tb.innerHTML = '<tr><td colspan="4" class="text-center p-5 text-muted small">目前尚無活躍執行中之紀錄</td></tr>';
+                    } else {
+                        tb.innerHTML = active.map(p => `
+                            <tr onclick="showTicketDetail(${p.createdAt})" style="cursor: pointer;">
+                                <td><span class="agcode-tag">${p.agcode}</span></td>
+                                <td class="fw-700">${p.name}</td>
+                                <td><span class="badge border text-muted">${p.category}</span></td>
+                                <td class="text-secondary fw-500">${p.date}</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            };
+            gas.run('onPenalties').getPenalties();
+        }
+
+        function handleAddPenalty(e) {
+            e.preventDefault();
+            const data = {
+                agcode: document.getElementById('penAgcode').value.trim(),
+                date: document.getElementById('penDate').value,
+                category: document.getElementById('penCategory').value,
+                reason: document.getElementById('penReason').value.trim(),
+                method: document.getElementById('penMethod').value.trim()
+            };
+            load(true);
+            window.onAddRes = (res) => {
+                load(false);
+                if (res.success) {
+                    showToast(res.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('addPenaltyModal')).hide();
+                    loadPenalties();
+                } else showToast(res.message, 'error');
+            };
+            gas.run('onAddRes').managePenalty('create', data);
+        }
+
+        function queryPersonPenalties() {
+            const code = document.getElementById('queryAgcode').value.trim();
+            if (!code) return;
+            const res = allPenalties.filter(p => p.agcode === code);
+            const area = document.getElementById('queryResultArea');
+            const tb = document.getElementById('queryPenaltyListBody');
+            area.style.display = 'block';
+            if (res.length === 0) {
+                tb.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-muted small">查無此員相關歷史紀錄</td></tr>';
+            } else {
+                tb.innerHTML = res.map(p => `
+                    <tr>
+                        <td><span class="agcode-tag">${p.agcode}</span></td>
+                        <td class="fw-700">${p.name}</td>
+                        <td><span class="small badge">${p.category}</span></td>
+                        <td class="small text-secondary">${p.date}</td>
+                        <td class="text-end"><button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="showTicketDetail(${p.createdAt})">詳情</button></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        let currentTicket = null;
+        function showTicketDetail(ts) {
+            const p = allPenalties.find(x => x.createdAt == ts);
+            if (!p) return;
+            currentTicket = p;
+            document.getElementById('ticket-agcode').innerText = p.agcode;
+            document.getElementById('ticket-name').innerText = p.name;
+            document.getElementById('ticket-category').innerText = p.category;
+            document.getElementById('ticket-date').innerText = p.date;
+            document.getElementById('ticket-reason').innerText = p.reason;
+            document.getElementById('ticket-method').innerText = p.method;
+
+            const sa = document.getElementById('ticket-status-area');
+            const aa = document.getElementById('ticket-actions-area');
+            const ia = document.getElementById('ticket-audit-info');
+            document.getElementById('opAgcode').value = '';
+            document.getElementById('opDisplay').innerText = '';
+
+            if (!p.status || p.status === 'Active') {
+                sa.innerHTML = '<span class="badge-active">執行中 Active</span>';
+                aa.style.display = 'block'; ia.style.display = 'none';
+            } else {
+                const isComp = p.status === 'Completed';
+                sa.innerHTML = `<span class="badge ${isComp ? 'bg-success' : 'bg-warning text-dark'} px-3 py-2 rounded-3">${isComp ? '已完成' : '已撤銷'}</span>`;
+                aa.style.display = 'none'; ia.style.display = 'block';
+                document.getElementById('audit-op-name').innerText = p.opName || '---';
+                document.getElementById('audit-op-date').innerText = p.opDate ? new Date(p.opDate).toLocaleString() : '---';
+            }
+            new bootstrap.Modal(document.getElementById('ticketModal')).show();
+        }
+
+        function checkOperator() {
+            const code = document.getElementById('opAgcode').value.trim();
+            const d = document.getElementById('opDisplay');
+            if (code.length < 3) return d.innerText = '';
+            const p = db.people.find(x => x.id === code);
+            d.innerHTML = p ? `<span class="text-success">${p.name} (${p.rank}) <i class="bi bi-patch-check"></i></span>` : '<span class="text-danger">權限 AGCODE 查無此人</span>';
+        }
+
+        function handleTicketAction(op) {
+            const opCode = document.getElementById('opAgcode').value.trim();
+            const operator = db.people.find(x => x.id === opCode);
+            if (!operator) return showToast('驗證失敗', 'error');
+            if (!confirm('確認變更狀態？')) return;
+            load(true);
+            window.onTicketAct = (res) => {
+                load(false);
+                if (res.success) {
+                    showToast(res.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('ticketModal')).hide();
+                    loadPenalties();
+                    queryPersonPenalties();
+                } else showToast(res.message, 'error');
+            };
+            gas.run('onTicketAct').managePenalty(op, {
+                agcode: currentTicket.agcode,
+                createdAt: currentTicket.createdAt,
+                opAgcode: operator.id, opName: operator.name, opRank: operator.rank
+            });
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

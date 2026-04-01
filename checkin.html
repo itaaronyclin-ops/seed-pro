@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>訓練簽到 - SEED PRO+</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-dark: #2d3436;
+            --bg-body: #f8fafc;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .checkin-card {
+            background: white;
+            width: 100%;
+            max-width: 450px;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: var(--primary-dark);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .form-label {
+            font-weight: 700;
+            color: #64748b;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        .btn-checkin {
+            background: var(--primary-dark);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: 700;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.2s;
+        }
+
+        .btn-checkin:hover {
+            background: #000;
+            transform: translateY(-2px);
+        }
+
+        .location-box {
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 0.85rem;
+            color: #475569;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-preview-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 28px;
+            padding: 40px 30px;
+            margin-top: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .avatar-circle {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            margin: 0 auto 20px;
+            box-shadow: 0 8px 20px rgba(58, 123, 213, 0.3);
+        }
+
+        .emp-name {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        }
+
+        .emp-dept {
+            font-size: 1rem;
+            color: #64748b;
+            font-weight: 500;
+            margin-bottom: 25px;
+        }
+
+        .btn-confirm {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            width: 100%;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
+        }
+
+        .btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(30, 41, 59, 0.3);
+            filter: brightness(1.1);
+        }
+
+        /* Original styles below */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .btn-elegant {
+            background: #2d3436;
+            color: white;
+            border: none;
+            border-radius: 0 12px 12px 0 !important;
+            padding: 0 25px;
+            font-weight: 700;
+        }
+
+        .btn-elegant:hover {
+            background: #000;
+            color: white;
+        }
+
+        #agcode {
+            border-radius: 12px 0 0 12px !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading-overlay">
+        <div class="spinner-border text-dark"></div>
+    </div>
+
+    <div class="checkin-card">
+        <div class="header">
+            <h3 class="mb-1"><i class="bi bi-geo-alt-fill"></i> 訓練簽到</h3>
+            <div class="small opacity-75">SEED PRO+ Attendance System</div>
+        </div>
+
+        <div class="content">
+            <!-- Stage 1: Identity Verification -->
+            <div id="stage-1">
+                <div class="mb-4 text-center">
+                    <label class="form-label d-block text-start px-1">AGCODE</label>
+                    <div class="input-group">
+                        <input type="text" id="agcode" class="form-control form-control-lg text-center"
+                            placeholder="請輸入AG CODE" autocomplete="off">
+                        <button class="btn btn-elegant" type="button" id="verifyBtn" onclick="verifyIdentity()">
+                            <i class="bi bi-search"></i> 查詢
+                        </button>
+                    </div>
+                </div>
+
+                <div id="status-verifying" class="text-center py-3" style="display:none;">
+                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                    <span class="text-muted">查詢中...</span>
+                </div>
+
+                <div id="emp-preview" style="display:none;">
+                    <div class="user-preview-card">
+                        <div class="avatar-circle">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <div class="emp-name" id="emp-name"></div>
+                        <div class="emp-dept" id="emp-dept"></div>
+                        <button class="btn-confirm" onclick="goToStage2()">進入簽到</button>
+                    </div>
+                </div>
+                <div id="emp-not-found" class="text-danger small text-center mt-3" style="display:none;">
+                    <i class="bi bi-exclamation-circle-fill me-1"></i> 您輸入的 AGCODE 不存在或格式錯誤
+                </div>
+            </div>
+
+            <!-- Stage 2: Event Selection & Location -->
+            <div id="stage-2" style="display:none;">
+                <div id="status-searching" class="text-center py-4">
+                    <div class="spinner-grow text-primary mb-3"></div>
+                    <p class="text-muted">正在尋找進行中的活動...</p>
+                </div>
+
+                <div id="checkin-controls" style="display:none;">
+                    <div class="mb-4">
+                        <label class="form-label">選擇活動項目</label>
+                        <select id="eventSelect" class="form-select form-select-lg"></select>
+                    </div>
+
+                    <button class="btn-checkin" id="submitBtn" onclick="handleCheckin()">確認簽到</button>
+
+                    <div class="location-box">
+                        <i class="bi bi-pin-map-fill text-danger"></i>
+                        <span id="loc-text">正在獲取 GPS 定位...</span>
+                    </div>
+                    <button class="btn btn-link btn-sm w-100 mt-4 text-muted" onclick="backToStage1()">回上一步
+                        (更換人員)</button>
+                </div>
+
+                <div id="no-events" class="text-center py-5" style="display:none;">
+                    <i class="bi bi-calendar-x fs-1 text-muted"></i>
+                    <h5 class="mt-3 text-secondary">目前無進行中的活動</h5>
+                    <button class="btn btn-light btn-sm mt-2" onclick="backToStage1()">返回</button>
+                </div>
+            </div>
+
+            <!-- Result Stage -->
+            <div id="stage-result" style="display:none;" class="text-center py-4">
+                <div class="mb-4">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+                    <h2 class="fw-bold mt-3">簽到完成</h2>
+                    <p class="text-muted" id="result-message"></p>
+                </div>
+
+                <div id="penalty-alert" class="alert alert-danger text-center p-4 mb-4"
+                    style="display:none; border-radius:16px; border-left: 5px solid #dc3545;">
+                    <h5 class="alert-heading fw-bold mb-3"><i class="bi bi-exclamation-octagon-fill me-2"></i>違規提醒</h5>
+                    <div class="fs-4 fw-800">有違規處分 請洽教委</div>
+                </div>
+
+                <button class="btn btn-dark w-100 p-3 rounded-3 fw-bold" onclick="location.reload()">返回首頁</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz4kiWGCG96zZHAJgc-wOAaCxOkS7WXf5IriAEKk0StXYFNVlME7x2SjaSva3Rp8obX/exec';
+        let userLoc = null;
+        let currentEmp = null;
+
+        const gas = {
+            run: (function () {
+                function createRunner(s, f) {
+                    const runner = function (action, ...args) {
+                        return new Promise((resolve, reject) => {
+                            fetch(API_URL, {
+                                method: 'POST',
+                                mode: 'cors',
+                                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                body: JSON.stringify({ action: action, args: args })
+                            })
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (data && data.error) {
+                                        const err = data.message || data.error;
+                                        if (f) f(err);
+                                        reject(err);
+                                    } else {
+                                        if (s) s(data);
+                                        resolve(data);
+                                    }
+                                })
+                                .catch(err => {
+                                    const errMsg = err.toString();
+                                    if (f) f(errMsg);
+                                    reject(errMsg);
+                                });
+                        });
+                    };
+
+                    return new Proxy(runner, {
+                        get: function (target, prop) {
+                            if (prop === 'withSuccessHandler') return (fn) => createRunner(fn, f);
+                            if (prop === 'withFailureHandler') return (fn) => createRunner(s, fn);
+                            return function (...args) {
+                                return target(prop, ...args);
+                            };
+                        }
+                    });
+                }
+                return createRunner();
+            })()
+        };
+
+        window.onload = () => {
+            setupAgcodeHandler();
+            watchLocation();
+        };
+
+        function setupAgcodeHandler() {
+            const input = document.getElementById('agcode');
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') verifyIdentity();
+            };
+        }
+
+        async function verifyIdentity() {
+            const input = document.getElementById('agcode');
+            const val = input.value.trim().toUpperCase();
+
+            if (!val) return;
+
+            // Reset UI
+            document.getElementById('emp-preview').style.display = 'none';
+            document.getElementById('emp-not-found').style.display = 'none';
+            document.getElementById('status-verifying').style.display = 'block';
+            document.getElementById('verifyBtn').disabled = true;
+
+            try {
+                const res = await gas.run('checkPersonExists', val);
+                document.getElementById('status-verifying').style.display = 'none';
+                document.getElementById('verifyBtn').disabled = false;
+
+                if (res && res.found) {
+                    currentEmp = res.person;
+                    document.getElementById('emp-name').innerText = res.person.name;
+                    document.getElementById('emp-dept').innerText = `${res.person.rank} / ${res.person.group}`;
+                    document.getElementById('emp-preview').style.display = 'block';
+                } else {
+                    document.getElementById('emp-not-found').style.display = 'block';
+                    currentEmp = null;
+                }
+            } catch (e) {
+                document.getElementById('status-verifying').style.display = 'none';
+                document.getElementById('verifyBtn').disabled = false;
+                alert('查詢失敗: ' + e);
+            }
+        }
+
+        function goToStage2() {
+            document.getElementById('stage-1').style.display = 'none';
+            document.getElementById('stage-2').style.display = 'block';
+            initEvents();
+        }
+
+        function backToStage1() {
+            document.getElementById('stage-1').style.display = 'block';
+            document.getElementById('stage-2').style.display = 'none';
+            document.getElementById('agcode').value = '';
+            document.getElementById('emp-preview').style.display = 'none';
+            currentEmp = null;
+        }
+
+        async function initEvents() {
+            document.getElementById('status-searching').style.display = 'block';
+            document.getElementById('checkin-controls').style.display = 'none';
+            document.getElementById('no-events').style.display = 'none';
+
+            try {
+                const res = await gas.run('getTrainingEvents', true);
+                document.getElementById('status-searching').style.display = 'none';
+                if (res.success && res.events.length > 0) {
+                    const sel = document.getElementById('eventSelect');
+                    sel.innerHTML = res.events.map(ev => `<option value="${ev.id}">${ev.title}</option>`).join('');
+                    document.getElementById('checkin-controls').style.display = 'block';
+                } else {
+                    document.getElementById('no-events').style.display = 'block';
+                }
+            } catch (e) {
+                alert('載入場次失敗: ' + e);
+                backToStage1();
+            }
+        }
+
+        function watchLocation() {
+            if (!navigator.geolocation) {
+                updateLocText('❌ 不支援定位功能');
+                return;
+            }
+            navigator.geolocation.watchPosition(
+                (pos) => {
+                    userLoc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+                    updateLocText(`📍 定位已就緒 (誤差 ${Math.round(pos.coords.accuracy)}m)`);
+                },
+                (err) => {
+                    updateLocText('⚠️ 無法獲取定位，請確認權限');
+                },
+                { enableHighAccuracy: true }
+            );
+        }
+
+        function updateLocText(t) { document.getElementById('loc-text').innerText = t; }
+
+        async function handleCheckin() {
+            if (!currentEmp) return alert('身分資訊異常');
+            if (!userLoc) return alert('尚未獲取 GPS 定位，請稍候或重整頁面');
+
+            const eventId = document.getElementById('eventSelect').value;
+            const eventTitle = document.getElementById('eventSelect').options[document.getElementById('eventSelect').selectedIndex].text;
+
+            toggleLoading(true);
+            try {
+                const res = await gas.run('trainingCheckin', {
+                    eventId: eventId,
+                    agcode: currentEmp.id,
+                    name: currentEmp.name,
+                    department: currentEmp.group,
+                    location: userLoc
+                });
+                toggleLoading(false);
+                if (res.success) {
+                    showResult(res.message, res.penalty);
+                } else {
+                    alert('❌ ' + res.message);
+                }
+            } catch (e) {
+                toggleLoading(false);
+                alert('連線失敗: ' + e);
+            }
+        }
+
+        function showResult(msg, penalty) {
+            document.getElementById('stage-2').style.display = 'none';
+            document.getElementById('stage-result').style.display = 'block';
+            document.getElementById('result-message').innerText = msg;
+
+            if (penalty) {
+                document.getElementById('penalty-alert').style.display = 'block';
+            }
+        }
+
+        function toggleLoading(s) { document.getElementById('loading-overlay').style.display = s ? 'flex' : 'none'; }
+        function debounce(fn, d) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), d); }; }
+    </script>
+</body>
+
+</html>

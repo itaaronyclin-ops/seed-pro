@@ -1,0 +1,3340 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動工具箱 | Seed Pro+</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        .ceremony-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(20px);
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+        }
+
+        .mvp-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            padding: 2.5rem;
+            margin-top: 1.5rem;
+            min-width: 380px;
+            transform: scale(0.5);
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .mvp-card.show {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        @keyframes shine {
+            0% {
+                background-position: -200% center;
+            }
+
+            100% {
+                background-position: 200% center;
+            }
+        }
+
+        .text-shine {
+            background: linear-gradient(90deg, #fff, #fbbf24, #fff);
+            background-size: 200% auto;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 3s linear infinite;
+        }
+
+        :root {
+            --primary-dark: #2d3436;
+            --primary-bg: #fcfcfc;
+            --text-main: #2d3436;
+            --text-muted: #636e72;
+            --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+            --accent-blue: #0984e3;
+            --accent-purple: #6c5ce7;
+            --border-color: #f0f0f0;
+            --glass-white: rgba(255, 255, 255, 0.85);
+            --accent-green: #00b894;
+        }
+
+        body {
+            background-color: var(--primary-bg);
+            background-image: radial-gradient(at 0% 0%, rgba(108, 92, 231, 0.03) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(9, 132, 227, 0.03) 0px, transparent 50%);
+            color: var(--text-main);
+            font-family: "Inter", "Segoe UI", "Microsoft JhengHei", sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: margin-left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        body.sidebar-open .main-wrapper {
+            margin-left: 380px;
+        }
+
+        .glass-header {
+            background: var(--glass-white);
+            backdrop-filter: blur(15px);
+            border-bottom: 2px solid var(--border-color);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        #liveClock {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+        }
+
+        #liveDate {
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        .game-id-badge {
+            background: var(--primary-dark);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 800;
+        }
+
+        .glass-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+
+        .group-card {
+            background: white;
+            border-radius: 24px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .group-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+        }
+
+        .group-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-dark), #6366f1);
+        }
+
+        .group-title {
+            font-weight: 950;
+            font-size: 1.15rem;
+            margin-bottom: 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .group-member {
+            background: #f8fafc;
+            padding: 10px 14px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #334155;
+            border: 1px solid transparent;
+            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+
+        .group-member i {
+            color: #94a3b8;
+            font-size: 0.8rem;
+        }
+
+        /* Dealing Card Animation */
+        .dealing-card {
+            background: linear-gradient(135deg, var(--primary-dark), #1e293b);
+            color: white;
+            width: 80px;
+            height: 110px;
+            border-radius: 12px;
+            position: fixed;
+            z-index: 1500;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+            opacity: 0;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+            background-size: 8px 8px;
+        }
+
+        .dealing-card::after {
+            content: 'SEED';
+            font-size: 0.7rem;
+            font-weight: 950;
+            opacity: 0.3;
+            letter-spacing: 2px;
+        }
+
+        .deck-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 160px;
+            background: var(--primary-dark);
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1400;
+            border: 4px solid white;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 950;
+            letter-spacing: 2px;
+            box-shadow: 0 0 50px rgba(99, 102, 241, 0.3);
+        }
+
+        .deck-box.active {
+            display: flex;
+            animation: deckPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes deckPop {
+            from {
+                transform: translate(-50%, -50%) scale(0) rotate(-10deg);
+                opacity: 0;
+            }
+
+            to {
+                transform: translate(-50%, -50%) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes dealToGroup {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5) rotate(0deg);
+            }
+
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.3) rotate(15deg);
+            }
+
+            100% {
+                opacity: 0;
+                transform: var(--target-pos) scale(0.2) rotate(720deg);
+            }
+        }
+
+        .group-card.flash {
+            animation: cardFlash 0.4s ease-out;
+        }
+
+        @keyframes cardFlash {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .app-card {
+            background: white;
+            border-radius: 32px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .app-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-dark);
+        }
+
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            background: #f8fafc;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2.5rem;
+            transition: all 0.3s;
+        }
+
+        .app-card:hover .app-icon {
+            background: var(--primary-dark);
+            color: white;
+            transform: rotate(10deg) scale(1.1);
+        }
+
+        .app-title {
+            font-size: 1.5rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+        }
+
+        .app-desc {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .settings-sidebar {
+            position: fixed;
+            top: 0;
+            left: -400px;
+            width: 380px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-color);
+            z-index: 1050;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 2rem;
+            overflow-y: auto;
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.05);
+        }
+
+        .settings-sidebar.open {
+            left: 0;
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 60px;
+            height: 60px;
+            background: var(--primary-dark);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 1100;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: 0.3s;
+        }
+
+        .sidebar-toggle.active {
+            transform: rotate(90deg);
+        }
+
+        .section-title {
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slot-container {
+            height: 200px;
+            overflow: hidden;
+            position: relative;
+            background: #f8f9fa;
+            border-radius: 20px;
+            border: 2px solid var(--border-color);
+        }
+
+        .slot-rail {
+            position: absolute;
+            width: 100%;
+            transition: top 3s cubic-bezier(0.1, 0, 0, 1);
+            top: 0;
+        }
+
+        .slot-item {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            font-weight: 950;
+            color: var(--primary-dark);
+        }
+
+        #group-results {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(40px);
+            z-index: 10000;
+            padding: 60px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: center;
+            gap: 20px;
+        }
+
+        .group-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            padding: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            height: 280px;
+            width: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.3);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .group-card .group-title {
+            color: white;
+            opacity: 0.8;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        .group-card i {
+            color: var(--primary);
+            filter: drop-shadow(0 0 15px var(--primary));
+            font-size: 4rem !important;
+        }
+
+        .group-card.flash {
+            animation: group-flash 0.3s;
+        }
+
+        @keyframes group-flash {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+                border-color: var(--primary);
+                box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .group-member {
+            background: #f8fafc;
+            padding: 8px 12px;
+            border-radius: 12px;
+            margin-bottom: 6px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            animation: bounceIn 0.4s both;
+        }
+
+        @keyframes bounceIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .btn-elegant {
+            background: var(--primary-dark);
+            color: white;
+            border-radius: 14px;
+            padding: 12px 30px;
+            font-weight: 800;
+            border: none;
+            transition: 0.3s;
+        }
+
+        .btn-elegant:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .timer-critical {
+            animation: timer-flash 0.5s infinite alternate;
+            color: #ef4444 !important;
+        }
+
+        @keyframes timer-flash {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            to {
+                opacity: 0.7;
+                transform: scale(1.02);
+            }
+        }
+
+        .time-up-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+        }
+
+        .time-up-text {
+            font-size: 10rem;
+            font-weight: 950;
+            background: linear-gradient(135deg, #ff7675, #d63031);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 20px 50px rgba(214, 48, 49, 0.4);
+            letter-spacing: 5px;
+            font-family: 'JetBrains Mono';
+        }
+
+        /* Custom UI */
+        .global-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 20000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: 0.3s;
+        }
+
+        .global-loading.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .custom-dialog-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 25000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .custom-dialog {
+            background: white;
+            width: 90%;
+            max-width: 450px;
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            animation: dialogPop 0.4s both;
+        }
+
+        @keyframes dialogPop {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .custom-dialog-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-align: center;
+            margin: 1.5rem 0;
+        }
+
+        .custom-dialog-btns {
+            display: flex;
+            gap: 12px;
+        }
+
+        .custom-dialog-btns button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 800;
+            border: none;
+        }
+
+        .btn-confirm {
+            background: var(--primary-dark);
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .person-pill {
+            display: inline-block;
+            padding: 6px 14px;
+            background: #f1f5f9;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .person-pill.inactive {
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+
+        .person-pill.custom {
+            background: #e6fffa;
+            color: #00b894;
+            border: 1px solid #00b894;
+        }
+
+        .result-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .group-list-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            z-index: 10001;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 60px;
+            color: white;
+        }
+
+        .workshop-init-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            z-index: 10005;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 20px;
+        }
+
+        .workshop-init-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 40px;
+            padding: 60px;
+            text-align: center;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+            position: relative;
+            z-index: 1;
+        }
+
+        .workshop-init-option {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
+            padding: 40px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .workshop-init-option:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .workshop-init-option i {
+            font-size: 4.5rem;
+            margin-bottom: 20px;
+            color: white;
+            filter: drop-shadow(0 10px 15px rgba(255, 255, 255, 0.2));
+            transition: all 0.4s ease;
+        }
+
+        .workshop-init-option:hover i {
+            transform: scale(1.1);
+        }
+
+        /* Participant Selection Overlay */
+        #people-selection-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            z-index: 10001;
+            display: none;
+            flex-direction: column;
+            padding: 50px;
+        }
+
+        .selection-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .selection-search {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 15px 30px;
+            color: white;
+            width: 350px;
+            transition: 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .selection-search:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        #selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            overflow-y: auto;
+            padding: 20px 10px;
+            flex-grow: 1;
+        }
+
+        .selection-pill {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 25px 20px;
+            border-radius: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            font-weight: 700;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .selection-pill:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .selection-pill.active {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--accent-purple) 100%);
+            border-color: transparent;
+            box-shadow: 0 15px 40px rgba(108, 92, 231, 0.4);
+            transform: translateY(-5px) scale(1.05);
+        }
+
+        .selection-pill .unit-text {
+            font-size: 0.75rem;
+            opacity: 0.5;
+            font-weight: 500;
+        }
+
+        .selection-footer {
+            margin-top: 30px;
+            text-align: center;
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* QR Code & Dashboard Hub */
+        .qr-hub-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: 35px;
+            padding: 35px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .qr-hub-card:hover {
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+        }
+
+        .dashboard-timer-circle {
+            width: 220px;
+            height: 220px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(248, 250, 252, 0.9));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.06), inset 0 0 0 8px rgba(255, 255, 255, 0.4);
+            border: none;
+        }
+
+        .dashboard-timer-circle::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, #0984e3, #6c5ce7);
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.2;
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-timer-circle:hover::before {
+            opacity: 0.4;
+            transform: scale(1.02);
+        }
+
+        .dashboard-timer-circle .time-text {
+            font-size: 4rem;
+            font-weight: 950;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-family: 'JetBrains Mono';
+        }
+
+        #workshop-qr-container img {
+            width: 150px;
+            height: 150px;
+            border-radius: 15px;
+        }
+
+        /* Workshop Gamma Extensions */
+        .workshop-team-config-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            overflow: hidden;
+            height: 100%;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.04);
+        }
+
+        .workshop-team-config-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .workshop-team-card-header {
+            padding: 20px 25px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(248, 250, 252, 0.9));
+            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .workshop-member-list {
+            padding: 20px 25px;
+            min-height: 100px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .workshop-member-pill {
+            background: white;
+            border-radius: 50px;
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(226, 232, 240, 0.6);
+            transition: all 0.2s ease;
+        }
+
+        .workshop-member-pill:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .workshop-member-pill .btn-remove {
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: color 0.2s;
+        }
+
+        .workshop-member-pill .btn-remove:hover {
+            color: #b91c1c;
+        }
+
+        .dashboard-status-card {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: 35px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            height: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04);
+        }
+
+        .dashboard-status-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .dashboard-status-card.submitted {
+            border-color: rgba(108, 92, 231, 0.3);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(108, 92, 231, 0.05));
+        }
+
+        .rank-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 45px;
+            height: 45px;
+            background: #e2e8f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.2rem;
+        }
+
+        .rank-badge.rank-1 {
+            background: #ffd700;
+            color: #8b4513;
+        }
+
+        .rank-badge.rank-2 {
+            background: #c0c0c0;
+            color: #4b4b4b;
+        }
+
+        .rank-badge.rank-3 {
+            background: #cd7f32;
+            color: #fff;
+        }
+
+        .status-glow {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: #e2e8f0;
+        }
+
+        .submitted .status-glow {
+            background: var(--primary);
+            box-shadow: 0 0 15px var(--primary);
+            animation: glowAnim 2s infinite;
+        }
+
+        @keyframes glowAnim {
+            0% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.3;
+            }
+        }
+
+        .workshop-tab-btn {
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            color: var(--text-muted);
+            border: none !important;
+            background: transparent !important;
+            font-size: 1.1rem;
+        }
+
+        .workshop-tab-btn:hover:not(.active) {
+            color: var(--primary-dark);
+            background: rgba(255, 255, 255, 0.8) !important;
+            transform: translateY(-2px);
+        }
+
+        .workshop-tab-btn.active {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--accent-purple) 100%) !important;
+            color: white !important;
+            box-shadow: 0 10px 20px rgba(108, 92, 231, 0.2) !important;
+            transform: scale(1.02);
+        }
+
+        .workshop-ctrl-btn {
+            border-radius: 16px;
+            font-weight: 800;
+            padding: 12px 24px;
+            letter-spacing: 1px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .workshop-ctrl-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .workshop-team-pill {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #e2e8f0;
+            padding: 8px 20px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            transition: 0.3s;
+        }
+
+        .workshop-team-pill:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .workshop-team-pill .btn-remove {
+            cursor: pointer;
+            color: #ef4444;
+            font-size: 0.8rem;
+        }
+
+        .workshop-ctrl-btn {
+            border-radius: 12px;
+            font-weight: 800;
+            padding: 10px 20px;
+            letter-spacing: 1px;
+        }
+
+        .celebration-banner {
+            background: white;
+            padding: 30px 60px;
+            border-radius: 60px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .translate-y {
+            transition: 0.3s;
+        }
+
+        .translate-y:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Carousel Showcase */
+        .showcase-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            z-index: 10500;
+            display: none;
+            flex-direction: column;
+        }
+
+        .showcase-header {
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .showcase-body {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .showcase-img {
+            max-width: 80vw;
+            max-height: 70vh;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s;
+        }
+
+        .showcase-controls {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 40px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .showcase-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .showcase-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .showcase-footer {
+            padding: 30px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        body.workshop-mode-active::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 100%, rgba(108, 92, 231, 0.15) 0%, transparent 60%);
+            z-index: -1;
+            pointer-events: none;
+            animation: pulse-glow 8s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            from {
+                opacity: 0.5;
+                transform: scale(1);
+            }
+
+            to {
+                opacity: 0.8;
+                transform: scale(1.1);
+            }
+        }
+
+        /* ===== PODIUM OVERLAY ===== */
+        .podium-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 100%, rgba(108, 92, 231, 0.35) 0%, rgba(15, 23, 42, 0.97) 55%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            z-index: 11000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 0;
+            color: white;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .podium-title-wrap {
+            position: absolute;
+            top: 8%;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            white-space: nowrap;
+            opacity: 0;
+            animation: fadeSlideDown 0.8s 0.3s ease forwards;
+        }
+
+        .podium-subtitle {
+            font-size: 0.78rem;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            opacity: 0.45;
+            margin-bottom: 10px;
+        }
+
+        .podium-main-title {
+            font-size: clamp(2rem, 5vw, 3.8rem);
+            font-weight: 950;
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 40%, #e17055 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 6px 24px rgba(253, 203, 110, 0.45));
+            line-height: 1.1;
+        }
+
+        .podium-stage {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: clamp(8px, 2vw, 24px);
+            width: 100%;
+            max-width: 860px;
+            height: 60vh;
+            padding: 0 clamp(16px, 4vw, 60px);
+        }
+
+        .podium-slot {
+            flex: 1;
+            max-width: 280px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .podium-team-info {
+            text-align: center;
+            margin-bottom: 18px;
+            opacity: 0;
+        }
+
+        .podium-medal {
+            font-size: 2.8rem;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .podium-team-name {
+            font-size: clamp(0.9rem, 2vw, 1.2rem);
+            font-weight: 900;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .podium-score {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            font-weight: 950;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -1px;
+        }
+
+        .podium-score-unit {
+            font-size: 0.9rem;
+            font-weight: 600;
+            opacity: 0.55;
+        }
+
+        .podium-bar {
+            width: 100%;
+            border-radius: 20px 20px 0 0;
+            transform: scaleY(0);
+            transform-origin: bottom;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .podium-bar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.25), transparent 50%);
+            border-radius: inherit;
+        }
+
+        .podium-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -70%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: podiumShimmer 2.5s 2s infinite;
+        }
+
+        @keyframes podiumShimmer {
+            to {
+                left: 140%;
+            }
+        }
+
+        .podium-rank-num {
+            font-size: clamp(3rem, 7vw, 5.5rem);
+            font-weight: 950;
+            color: rgba(255, 255, 255, 0.18);
+            font-family: 'JetBrains Mono', monospace;
+            user-select: none;
+            position: relative;
+            z-index: 1;
+        }
+
+        .podium-bar.gold {
+            background: linear-gradient(180deg, #fff3cd, #ffeaa7 20%, #fdcb6e 55%, #e09940);
+            box-shadow: 0 -30px 80px rgba(253, 203, 110, 0.6), 0 0 120px rgba(253, 203, 110, 0.2);
+        }
+
+        .podium-bar.silver {
+            background: linear-gradient(180deg, #f5f6fa, #dfe6e9 20%, #b2bec3 55%, #6d7f8c);
+            box-shadow: 0 -20px 50px rgba(178, 190, 195, 0.5);
+        }
+
+        .podium-bar.bronze {
+            background: linear-gradient(180deg, #ffd8a8, #fab1a0 20%, #e07060 55%, #c05040);
+            box-shadow: 0 -15px 40px rgba(224, 112, 96, 0.4);
+        }
+
+        .podium-close-hint {
+            position: absolute;
+            bottom: 24px;
+            font-size: 0.78rem;
+            opacity: 0;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            animation: fadeSlideDown 0.8s 2.5s ease forwards;
+        }
+
+        @keyframes fadeSlideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-15px);
+            }
+
+            to {
+                opacity: 0.4;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes riseUp {
+            from {
+                transform: scaleY(0);
+            }
+
+            to {
+                transform: scaleY(1);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(25px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" style="display:none;">
+        <i class="bi bi-gear-fill"></i>
+    </div>
+
+    <div class="settings-sidebar" id="settingsSidebar">
+        <h5 class="section-title"><i class="bi bi-gear-fill text-primary"></i> 設定參數</h5>
+
+        <div id="effect-config" class="mb-4">
+            <label class="form-label small fw-bold text-muted d-block">特效類型</label>
+            <div class="d-flex align-items-center gap-2">
+                <div id="currentEffectDisplay" class="flex-grow-1 p-2 bg-light rounded-3 small fw-bold text-center">Tech
+                    數位</div>
+                <a href="interaction-picker.html" class="btn btn-dark shadow-sm"><i class="bi bi-palette-fill"></i></a>
+            </div>
+        </div>
+
+        <div id="source-config">
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted">對象來源</label>
+                <div class="btn-group w-100">
+                    <input type="radio" class="btn-check" name="source" id="source-people" checked
+                        onclick="toggleSource('people')">
+                    <label class="btn btn-outline-dark" for="source-people">人員名冊</label>
+                    <input type="radio" class="btn-check" name="source" id="source-custom"
+                        onclick="toggleSource('custom')">
+                    <label class="btn btn-outline-dark" for="source-custom">自訂項目</label>
+                </div>
+            </div>
+
+            <div id="people-selector">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="small fw-bold text-muted">選擇成員 (<span id="count-active">0</span>)</div>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-link p-0 text-decoration-none small"
+                            onclick="selectAll(true)">全選</button>
+                        <button class="btn btn-link p-0 text-decoration-none small ms-2"
+                            onclick="selectAll(false)">清空</button>
+                    </div>
+                </div>
+                <input type="text" id="search-person" class="form-control form-control-sm mb-2 rounded-pill"
+                    placeholder="搜尋..." oninput="renderPeople()">
+                <div id="people-list" class="mb-3 p-2 border rounded-3 bg-light"
+                    style="max-height: 300px; overflow-y: auto;"></div>
+                <div class="input-group input-group-sm">
+                    <input type="text" id="temp-name" class="form-control" placeholder="臨時對象">
+                    <button class="btn btn-dark" onclick="addTempPerson()">新增</button>
+                </div>
+            </div>
+
+            <div id="custom-selector" style="display:none;">
+                <textarea id="custom-items" class="form-control border-2" rows="8" placeholder="每行輸入一個項目..."></textarea>
+            </div>
+        </div>
+
+        <div id="lottery-config" class="mt-4">
+            <hr>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="allow-repeat">
+                <label class="form-check-label fw-bold" for="allow-repeat">允許重複抽取</label>
+            </div>
+        </div>
+
+        <div id="grouping-config" class="mt-4" style="display:none;">
+            <hr>
+            <label class="form-label small fw-bold text-muted">分組數量</label>
+            <input type="number" id="group-count" class="form-control border-2" value="2" min="2">
+        </div>
+
+        <div id="history-config" class="mt-4">
+            <h5 class="section-title"><i class="bi bi-clock-history text-muted"></i> 歷史紀錄</h5>
+            <div id="history-list" class="small text-muted">尚無紀錄</div>
+        </div>
+    </div>
+
+    <div class="main-wrapper">
+        <header class="glass-header">
+            <div class="container d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <a id="back-to-menu-btn" href="index.html"
+                        class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-800">
+                        <i class="bi bi-arrow-left me-1"></i> 返回大廳
+                    </a>
+                    <div>
+                        <h5 class="fw-800 mb-0">互動工具箱</h5>
+                        <div id="liveDate">LOADING...</div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <div id="liveClock">00:00:00</div>
+                </div>
+                <div class="text-end">
+                    <span class="text-muted small fw-bold me-2">GAME ID:</span>
+                    <span id="gameId" class="game-id-badge">------</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="container-fluid py-5 px-lg-5">
+            <!-- Dashboard Menu -->
+            <div id="dashboard-menu">
+                <div class="text-center mb-5">
+                    <h1 class="display-4 fw-950 mb-2">互動功能選單</h1>
+                    <p class="text-muted fs-5">卓越源於不斷的學習與自我超越</p>
+                </div>
+                <div class="app-grid">
+                    <div class="app-card" onclick="switchTool('lottery')">
+                        <div class="app-icon text-primary"><i class="bi bi-gift"></i></div>
+                        <h3 class="app-title">隨機抽籤</h3>
+                        <p class="app-desc">公平公正的隨機抽取系統，可用於抽獎、發問、機會中隊。</p>
+                    </div>
+                    <div class="app-card" onclick="switchTool('grouping')">
+                        <div class="app-icon text-success"><i class="bi bi-people"></i></div>
+                        <h3 class="app-title">隨機分組</h3>
+                        <p class="app-desc">自動化分組演算法，搭配動態發牌動畫，快速完成戰隊編成。</p>
+                    </div>
+                    <div class="app-card" onclick="switchTool('timer')">
+                        <div class="app-icon text-warning"><i class="bi bi-stopwatch"></i></div>
+                        <h3 class="app-title">倒數計時</h3>
+                        <p class="app-desc">全螢幕醒目計時器，支援自訂時間與結束提示音。</p>
+                    </div>
+                    <div class="app-card" onclick="switchTool('points')">
+                        <div class="app-icon text-danger"><i class="bi bi-star-fill"></i></div>
+                        <h3 class="app-title">積分管理</h3>
+                        <p class="app-desc">當次訓練即時點數統計，排行榜權威展示。</p>
+                    </div>
+                    <div class="app-card" onclick="switchTool('workshop')">
+                        <div class="app-icon text-dark"><i class="bi bi-briefcase-fill"></i></div>
+                        <h3 class="app-title">A&H 工作坊</h3>
+                        <p class="app-desc">協作研討模式：支援隊伍建立、檔案上傳即時展示與動態評分系統。</p>
+                    </div>
+                    <div class="app-card" onclick="window.location.href='buzzer.html'">
+                        <div class="app-icon text-info"><i class="bi bi-trophy"></i></div>
+                        <h3 class="app-title">榮譽牆</h3>
+                        <p class="app-desc">開啟投影模式，展示即時數據與頒獎盛典。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Participant Selection Overlay -->
+            <div id="people-selection-overlay">
+                <div class="selection-header">
+                    <div>
+                        <h2 class="fw-950 mb-1 text-white">選擇參加人員</h2>
+                        <p class="text-white-50 small mb-0">請勾選本次要列入分組的學員名單</p>
+                    </div>
+                    <div class="d-flex gap-3 align-items-center">
+                        <input type="text" id="overlay-search" class="selection-search" placeholder="搜尋姓名..."
+                            oninput="renderSelectionOverlay()">
+                        <button class="btn btn-outline-light rounded-pill px-4"
+                            onclick="selectAll(true); renderSelectionOverlay();">全選</button>
+                        <button class="btn btn-outline-light rounded-pill px-4"
+                            onclick="selectAll(false); renderSelectionOverlay();">取消全選</button>
+                        <button class="btn btn-close btn-close-white"
+                            onclick="document.getElementById('people-selection-overlay').style.display='none'"></button>
+                    </div>
+                </div>
+                <div id="selection-grid">
+                    <!-- Dynamic Items -->
+                </div>
+                <div class="selection-footer">
+                    <button class="btn btn-elegant px-5 py-3 rounded-pill shadow-lg"
+                        onclick="confirmWorkshopGrouping()">
+                        <i class="bi bi-check-circle-fill me-2"></i> 完成選擇，開始隨機分組
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tool Container -->
+            <div id="tool-container" style="display:none;">
+                <div class="tool-title-area d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 class="fw-950 mb-0" id="current-tool-title">功能名稱</h2>
+                        <span id="current-tool-desc" class="text-muted small fw-bold">DESCRIPTION</span>
+                    </div>
+                    <button id="main-action-btn" class="btn btn-elegant px-5 py-3 rounded-pill shadow-lg translate-y"
+                        onclick="executeTool()" style="display:none;">
+                        <i class="bi bi-play-circle-fill me-2" id="action-icon"></i> <span id="action-text">開始</span>
+                    </button>
+                </div>
+
+                <div id="lottery-display" style="display:none;">
+                    <div class="glass-card d-flex flex-column align-items-center justify-content-center p-5"
+                        style="min-height: 500px;">
+                        <div id="lottery-intro" class="text-center">
+                            <i class="bi bi-gift text-primary display-1 opacity-25"></i>
+                            <h2 class="fw-900 mt-4">準備好開始抽籤了嗎？</h2>
+                            <p class="text-muted">點擊左下角齒輪進行設定</p>
+                        </div>
+                        <div id="slot-wrapper" style="display:none; width: 100%; max-width: 500px;">
+                            <div class="slot-container">
+                                <div id="slot-rail" class="slot-rail"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="grouping-display" style="display:none;">
+                    <div class="glass-card d-flex flex-column align-items-center justify-content-center p-5"
+                        style="min-height: 500px;">
+                        <div class="text-center">
+                            <i class="bi bi-diagram-3 text-primary display-1 opacity-25"></i>
+                            <h2 class="fw-900 mt-4">準備好開始分組了嗎？</h2>
+                            <p class="text-muted">點擊左下角設定組數，或直接點擊開始</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="group-results" class="row g-4 justify-content-center" style="display:none;"></div>
+
+                <div id="timer-display" style="display:none;">
+                    <div class="glass-card d-flex flex-column align-items-center justify-content-center p-5"
+                        style="min-height: 520px; background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(30,41,59,0.9)); border: 1px solid rgba(255,255,255,0.08);">
+
+                        <!-- Timer ring visual -->
+                        <div
+                            style="position:relative; display:flex; align-items:center; justify-content:center; margin-bottom: 24px;">
+                            <div style="
+                                width: 300px; height: 300px;
+                                border-radius: 50%;
+                                background: conic-gradient(rgba(99,102,241,0.3) 0%, rgba(99,102,241,0.05) 100%);
+                                border: 3px solid rgba(99,102,241,0.2);
+                                display:flex; align-items:center; justify-content:center;
+                                box-shadow: 0 0 60px rgba(99,102,241,0.15), inset 0 0 60px rgba(0,0,0,0.3);
+                            ">
+                                <div id="timer-number"
+                                    style="font-size: 5.5rem; font-weight: 950; font-family: 'Outfit', sans-serif; color: white; letter-spacing: -4px; line-height: 1; text-shadow: 0 0 40px rgba(99,102,241,0.5);">
+                                    05:00</div>
+                            </div>
+                        </div>
+
+                        <!-- Controls -->
+                        <div class="d-flex gap-3 mb-4">
+                            <button class="btn btn-lg fw-900 rounded-pill px-5" id="btn-timer-toggle"
+                                onclick="toggleTimer()"
+                                style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; box-shadow: 0 8px 25px rgba(99,102,241,0.4);">
+                                <i class="bi bi-play-fill me-2"></i>START
+                            </button>
+                            <button class="btn btn-lg fw-800 rounded-pill px-4" onclick="resetTimer()"
+                                style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.15);">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                        </div>
+
+                        <!-- Preset buttons -->
+                        <div class="d-flex gap-2 flex-wrap justify-content-center">
+                            <button class="btn btn-sm rounded-pill px-4 fw-bold" onclick="setTimer(60)"
+                                style="background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.1);">1
+                                MIN</button>
+                            <button class="btn btn-sm rounded-pill px-4 fw-bold" onclick="setTimer(180)"
+                                style="background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.1);">3
+                                MIN</button>
+                            <button class="btn btn-sm rounded-pill px-4 fw-bold" onclick="setTimer(300)"
+                                style="background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.1);">5
+                                MIN</button>
+                            <button class="btn btn-sm rounded-pill px-4 fw-bold" onclick="setTimer(600)"
+                                style="background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.1);">10
+                                MIN</button>
+                            <button class="btn btn-sm rounded-pill px-4 fw-bold" onclick="setCustomTimer()"
+                                style="background: rgba(99,102,241,0.2); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3);">
+                                <i class="bi bi-pencil-square me-1"></i>自訂</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="session-points-display" style="display:none;">
+                    <div class="glass-card p-4"
+                        style="background: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(30,41,59,0.92)); border: 1px solid rgba(255,255,255,0.08); color: white;">
+                        <!-- Header -->
+                        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                            <div>
+                                <div class="small fw-bold mb-1"
+                                    style="color: rgba(255,255,255,0.4); letter-spacing: 4px; text-transform:uppercase;">
+                                    Scoreboard</div>
+                                <h5 class="fw-950 mb-0">即時積分排行</h5>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <!-- Mode toggle pills -->
+                                <div class="d-flex gap-1 p-1 rounded-pill"
+                                    style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);">
+                                    <button id="pts-tab-indiv"
+                                        class="btn btn-sm rounded-pill px-3 fw-bold pts-tab active"
+                                        onclick="setPointsTab('indiv')">個人</button>
+                                    <button id="pts-tab-team" class="btn btn-sm rounded-pill px-3 fw-bold pts-tab"
+                                        onclick="setPointsTab('team')">單位</button>
+                                    <button id="pts-tab-customTeam" class="btn btn-sm rounded-pill px-3 fw-bold pts-tab"
+                                        onclick="setPointsTab('customTeam')">自訂小組</button>
+                                </div>
+                                <button class="btn btn-sm rounded-pill px-3 fw-bold" onclick="confirmResetPoints()"
+                                    style="background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.25);">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>重置
+                                </button>
+                            </div>
+                        </div>
+                        <div id="session-points-list" class="row g-3 justify-content-center"></div>
+
+                        <!-- Workshop Specific Points Actions -->
+                        <div id="workshop-points-actions" class="mt-5 pt-4 text-center"
+                            style="display:none; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <button class="btn rounded-pill px-5 py-3 fw-bold" onclick="nextWorkshopRound()"
+                                style="background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.15);">
+                                繼續下一局
+                            </button>
+                            <button class="btn btn-elegant rounded-pill px-5 py-3 fw-bold ms-3"
+                                onclick="finalizeWorkshop()">結束並結算</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Gamified Points Cards inject here -->
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <div id="workshop-display" style="display: none;">
+        <!-- Workshop Sub-Nav -->
+        <div class="mb-5 text-center">
+            <div class="d-inline-flex gap-2 p-2 rounded-pill"
+                style="background: rgba(255,255,255,0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+                <button class="btn rounded-pill px-5 py-2 fw-bold workshop-tab-btn active"
+                    onclick="switchWorkshopSection('setup')">
+                    <i class="bi bi-gear-fill me-2"></i> 隊伍配置
+                </button>
+                <button class="btn rounded-pill px-5 py-2 fw-bold workshop-tab-btn"
+                    onclick="switchWorkshopSection('dashboard')">
+                    <i class="bi bi-speedometer2 me-2"></i> 監測儀表板
+                </button>
+                <button class="btn rounded-pill px-5 py-2 fw-bold workshop-tab-btn"
+                    onclick="switchWorkshopSection('scoring')">
+                    <i class="bi bi-star-fill me-2"></i> 計分與結算
+                </button>
+            </div>
+        </div>
+
+        <!-- Setup Section -->
+        <div id="workshop-section-setup">
+            <div class="glass-card p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h5 class="fw-950 mb-1">隊伍管理 <span class="badge bg-light text-dark ms-2"
+                                id="workshop-team-count">0</span></h5>
+                        <div class="small text-muted">A&H 工作坊組別獨立於組織單位</div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary workshop-ctrl-btn" onclick="distributeMembersRandomly()">
+                            <i class="bi bi-shuffle me-1"></i> 自動分配成員
+                        </button>
+                        <button class="btn btn-dark workshop-ctrl-btn" onclick="promptAddWorkshopTeam()">
+                            <i class="bi bi-plus-lg me-1"></i> 新增隊伍
+                        </button>
+                        <button class="btn btn-outline-danger workshop-ctrl-btn" onclick="resetWorkshopTeams()">
+                            <i class="bi bi-trash me-1"></i> 全部重置
+                        </button>
+                    </div>
+                </div>
+                <div id="workshop-teams-config-list" class="row g-4">
+                    <!-- Team configuration cards injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="workshop-section-dashboard" style="display: none;">
+            <div class="row g-4 mb-4">
+                <div class="col-lg-8">
+                    <div class="qr-hub-card h-100">
+                        <div class="dashboard-timer-circle" style="cursor: pointer; cursor: pointer; transition: 0.2s;"
+                            onclick="toggleTimer()" onmouseover="this.style.transform='scale(1.05)'"
+                            onmouseout="this.style.transform='scale(1)'">
+                            <div class="time-text" id="workshop-dash-timer">05:00</div>
+                            <div class="small fw-bold text-muted mt-2" id="workshop-timer-label">點擊開始</div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h2 class="fw-950 mb-1">A&H 工作坊 進行中</h2>
+                            <div class="text-muted fw-bold mb-4" id="workshop-status-text">連線中，學員可透過掃碼或網址參與
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div id="workshop-qr-container" class="bg-light p-2 rounded-4 shadow-sm">
+                                </div>
+                                <div>
+                                    <div class="small fw-bold text-muted mb-1">繳交頁面</div>
+                                    <div class="fw-800 text-primary mb-1">workshop.html</div>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-sm btn-dark rounded-pill px-3"
+                                            onclick="endWorkshopSession()">停止並結算</button>
+                                        <button class="btn btn-sm btn-outline-dark rounded-pill px-3"
+                                            onclick="confirmResetWorkshop()">清空</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="glass-card p-4 h-100 bg-primary bg-opacity-10 border-primary border-opacity-25 shadow-sm"
+                        style="backdrop-filter: blur(20px);">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-950 mb-0">繳交即時動態</h5>
+                            <span id="workshop-status-badge"
+                                class="badge bg-primary rounded-pill px-4 py-2 fw-bold fs-6 shadow-sm">ACTIVE</span>
+                        </div>
+                        <div id="workshop-stats" class="h-100 d-flex flex-column justify-content-center text-center">
+                            <div class="display-3 fw-950 text-primary mb-2" id="workshop-submit-count">0</div>
+                            <div class="fw-bold text-muted fs-5 mb-3">已提交隊伍 / 共 <span id="workshop-total-teams"
+                                    class="text-dark fw-900">0</span> 隊
+                            </div>
+                            <div class="progress"
+                                style="height: 12px; border-radius: 50px; background: rgba(0,0,0,0.08);">
+                                <div id="workshop-progress-bar" class="progress-bar rounded-pill fw-bold"
+                                    role="progressbar"
+                                    style="width: 0%; background: linear-gradient(90deg, var(--primary-light, #6366f1), var(--accent-purple)); transition: width 0.8s cubic-bezier(0.16,1,0.3,1);"
+                                    aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="workshop-dashboard-cards" class="row g-4">
+                <!-- Gamified Team Status Cards -->
+            </div>
+        </div>
+
+        <!-- Scoring Section -->
+        <div id="workshop-section-scoring" style="display: none;">
+            <div class="glass-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-950 mb-0">工作坊 組別計分</h5>
+                    <button class="btn btn-dark fw-bold rounded-pill px-4 shadow-sm" onclick="startShowcase()"><i
+                            class="bi bi-play-circle-fill me-2"></i> 啟動作品展演</button>
+                </div>
+                <div id="workshop-scoring-list" class="row g-4 justify-content-center"></div>
+
+                <div class="mt-5 pt-4 border-top text-center">
+                    <button class="btn btn-outline-dark rounded-pill px-5 py-3 fw-bold"
+                        onclick="nextWorkshopRound()">繼續下一局</button>
+                    <button class="btn btn-elegant rounded-pill px-5 py-3 fw-bold ms-3"
+                        onclick="finalizeWorkshop()">結束並結算</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+    </div>
+
+    <div id="deckBox" class="deck-box">SEED</div>
+
+    <!-- Overlays -->
+    <div id="global-loading" class="global-loading">
+        <div class="text-center">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+            <div id="loading-text" class="mt-3 fw-900 text-muted">正在載入名單...</div>
+            <div id="loading-fallback" class="mt-4" style="display:none;">
+                <p class="small text-muted">載入時間較長，請稍候或</p>
+                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="hideLoading()">暫時取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-dialog-mask" class="custom-dialog-mask">
+        <div class="custom-dialog">
+            <h3 id="dialog-title" class="fw-950 mb-3">提示</h3>
+            <p id="dialog-msg" class="text-muted fw-bold mb-0"></p>
+            <div id="dialog-input-area" style="display:none;">
+                <input type="text" id="dialog-input" class="custom-dialog-input" placeholder="...">
+            </div>
+            <div class="custom-dialog-btns mt-4">
+                <button id="btn-dialog-cancel" class="btn-cancel" onclick="closeDialog()">取消</button>
+                <button id="btn-dialog-confirm" class="btn-confirm">確定</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="time-up-overlay" class="time-up-overlay" onclick="this.style.display='none'">
+        <div class="time-up-text">TIME UP</div>
+        <div class="fs-4 fw-bold opacity-75">時間到</div>
+        <div class="mt-4 btn btn-light rounded-pill px-5 py-2 fw-900">點擊任意處返回</div>
+    </div>
+
+    <div id="workshop-time-up-overlay" class="time-up-overlay"
+        style="display:none; flex-direction:column; justify-content:center; align-items:center;">
+        <div class="time-up-text">TIME UP</div>
+        <div class="fs-4 fw-bold opacity-75 mb-4">研討階段結束，學員上傳功能已暫停</div>
+        <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
+            <button class="btn btn-outline-light rounded-pill px-4 py-3 fw-900 shadow"
+                onclick="extendWorkshopTime(60)">+1 分鐘</button>
+            <button class="btn btn-outline-light rounded-pill px-4 py-3 fw-900 shadow"
+                onclick="extendWorkshopTime(300)">+5 分鐘</button>
+            <button class="btn btn-light text-dark rounded-pill px-5 py-3 fw-900 shadow"
+                onclick="endWorkshopAndScore()">結束並結算</button>
+        </div>
+    </div>
+
+    <div id="result-overlay" class="result-overlay" onclick="closeOverlay()">
+        <div id="celebration-container"></div>
+    </div>
+
+    <!-- Showcase Overlay -->
+    <div id="showcase-overlay" class="showcase-overlay">
+        <div class="showcase-header">
+            <div class="fw-950 fs-2" id="showcase-team-name">小組名稱</div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-none d-md-flex gap-2 opacity-50" style="font-size:0.75rem; font-family: monospace;">
+                    <span class="badge bg-white text-dark">← →</span><span>切換</span>
+                    <span class="badge bg-white text-dark ms-2">+ / -</span><span>給分</span>
+                    <span class="badge bg-white text-dark ms-2">Esc</span><span>離開</span>
+                </div>
+                <button class="btn-close btn-close-white" style="font-size: 1.5rem;" onclick="closeShowcase()"></button>
+            </div>
+        </div>
+        <div class="showcase-body">
+            <img src="" id="showcase-image" class="showcase-img">
+            <div class="showcase-controls">
+                <div class="showcase-btn" onclick="prevShowcase()"><i class="bi bi-chevron-left"></i></div>
+                <div class="showcase-btn" onclick="nextShowcase()"><i class="bi bi-chevron-right"></i></div>
+            </div>
+        </div>
+        <div class="showcase-footer">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-outline-light btn-lg rounded-pill fw-900 px-4" onclick="addShowcasePoint(-1)">-1
+                    分</button>
+                <div class="fw-950 fs-1 px-4" id="showcase-team-score">0</div>
+                <button class="btn btn-light text-dark btn-lg rounded-pill fw-900 px-4" onclick="addShowcasePoint(1)">+1
+                    分</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Podium Overlay -->
+    <div id="podium-overlay" class="podium-overlay" onclick="closePodium()">
+        <div class="podium-title-wrap">
+            <div class="podium-subtitle">Workshop Final Result</div>
+            <div class="podium-main-title" id="podium-winner-name">最終結算</div>
+        </div>
+        <div class="podium-stage" id="podium-stage">
+            <!-- Filled by JS -->
+        </div>
+        <div class="podium-close-hint">點擊任意處關閉</div>
+    </div>
+
+    <div id="workshop-init-overlay" class="workshop-init-overlay">
+        <div class="workshop-init-card">
+            <h1 class="display-3 fw-950 mb-3">工作坊 隊伍配置</h1>
+            <p class="fs-5 opacity-75 mb-5">請選擇本次工作坊的隊伍產生方式</p>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="workshop-init-option" onclick="selectWorkshopMode('manual')">
+                        <i class="bi bi-pencil-square"></i>
+                        <h3 class="fw-900">手動分隊</h3>
+                        <p class="opacity-75 small">自由建立隊伍並指派成員，適用於既定名單。</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="workshop-init-option" onclick="selectWorkshopMode('random')">
+                        <i class="bi bi-shuffle"></i>
+                        <h3 class="fw-900">隨機分隊</h3>
+                        <p class="opacity-75 small">搭配動態發牌動畫，自動分配至指定組數。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5">
+                <button class="btn btn-outline-light rounded-pill px-5 py-3 fw-bold"
+                    onclick="document.getElementById('workshop-init-overlay').style.display='none'">
+                    暫時跳過
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="group-list-overlay" class="group-list-overlay">
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <h1 class="fw-950 mb-0">分組結果</h1>
+            <button class="btn btn-dark rounded-pill px-5 py-3 fw-bold" onclick="closeGroupOverlay()">確認並關閉</button>
+        </div>
+        <div id="group-overlay-content" class="row g-4 justify-content-center"></div>
+    </div>
+
+    <audio id="sound-spin" src="https://assets.mixkit.co/active_storage/sfx/2016/2016-preview.mp3"></audio>
+    <audio id="sound-win" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+    <audio id="sound-deal" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
+    <audio id="sound-tick" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz4kiWGCG96zZHAJgc-wOAaCxOkS7WXf5IriAEKk0StXYFNVlME7x2SjaSva3Rp8obX/exec';
+
+        async function callAPI(action, args = []) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action, args })
+                });
+                return await response.json();
+            } catch (err) {
+                console.error('API Error:', err);
+                return { success: false, message: err.message };
+            }
+        }
+
+        let participants = [];
+        let workshopTeams = [];
+        let workshopMembers = {}; // teamId -> Array of names
+        let workshopPoints = {}; // workshop team -> score
+        let sessionPoints = {}; // agcode or teamId -> score
+        let customTeams = []; // Extra custom groups for the main board
+        let pointsView = 'indiv'; // indiv, team, or customTeam
+        let timerSeconds = 300;
+        let timerInterval = null;
+        let isTimerRunning = false;
+        let currentGameMode = 'normal';
+        let workshopSection = 'setup'; // setup, dashboard, scoring
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateClock(); setInterval(updateClock, 1000);
+            fetchPeople();
+            loadPreferredEffect();
+            refreshGameId();
+
+            // Load workshop data from storage
+            const storedTeams = localStorage.getItem('seedpro_workshop_teams');
+            if (storedTeams) workshopTeams = JSON.parse(storedTeams);
+            const storedMembers = localStorage.getItem('seedpro_workshop_members');
+            if (storedMembers) workshopMembers = JSON.parse(storedMembers);
+            const storedPoints = localStorage.getItem('seedpro_workshop_points');
+            if (storedPoints) workshopPoints = JSON.parse(storedPoints);
+            const storedCustomTeams = localStorage.getItem('seedpro_custom_teams');
+            if (storedCustomTeams) customTeams = JSON.parse(storedCustomTeams);
+
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'seedpro_workshop_uploads') {
+                    if (currentGameMode === 'workshop' && workshopSection === 'dashboard') renderWorkshopDashboard();
+                }
+            });
+        });
+
+        function refreshGameId() {
+            const id = 'SEEDPRO_' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            document.getElementById('gameId').textContent = id;
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('liveClock').textContent = now.toLocaleTimeString('en-GB', { hour12: false });
+            document.getElementById('liveDate').textContent = now.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'long' }).toUpperCase();
+        }
+
+        function fetchPeople() {
+            showLoading();
+            const fallbackTimer = setTimeout(() => {
+                const fb = document.getElementById('loading-fallback');
+                if (fb) fb.style.display = 'block';
+            }, 5000);
+
+            fetch(API_URL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'getReportData', args: [] })
+            })
+                .then(res => res.json())
+                .then(res => {
+                    clearTimeout(fallbackTimer);
+                    hideLoading();
+                    if (res && res.people) {
+                        participants = res.people.map(p => ({
+                            id: p.id || ('P' + Math.random()),
+                            name: p.name || '未命名',
+                            group: p.group || '',
+                            active: true,
+                            source: 'list'
+                        }));
+                        renderPeople();
+                        syncHonorWall();
+                        if (currentGameMode === 'workshop' && workshopSection === 'setup') {
+                            showCustomAlert('準備就緒', '請在左側勾選參加本次工作坊的人員。');
+                            toggleSidebar();
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.warn('Network issue, attempting fallback');
+                    hideLoading();
+                });
+        }
+
+        // --- Custom Dialog Logic ---
+        function showLoading(text) {
+            document.getElementById('loading-text').textContent = text || '正在載入...';
+            document.getElementById('global-loading').classList.add('show');
+        }
+        function hideLoading() { document.getElementById('global-loading').classList.remove('show'); }
+        function closeDialog() { document.getElementById('custom-dialog-mask').style.display = 'none'; }
+
+        function showCustomAlert(title, msg) {
+            document.getElementById('dialog-title').textContent = title;
+            document.getElementById('dialog-msg').textContent = msg;
+            document.getElementById('dialog-input-area').style.display = 'none';
+            document.getElementById('btn-dialog-cancel').style.display = 'none';
+            document.getElementById('custom-dialog-mask').style.display = 'flex';
+            document.getElementById('btn-dialog-confirm').onclick = closeDialog;
+        }
+
+        function showCustomPrompt(title, msg, placeholder, callback) {
+            document.getElementById('dialog-title').textContent = title;
+            document.getElementById('dialog-msg').textContent = msg;
+            document.getElementById('dialog-input-area').style.display = 'block';
+            document.getElementById('dialog-input').value = '';
+            document.getElementById('dialog-input').placeholder = placeholder;
+            document.getElementById('btn-dialog-cancel').style.display = 'block';
+            document.getElementById('custom-dialog-mask').style.display = 'flex';
+            document.getElementById('btn-dialog-confirm').onclick = () => {
+                const val = document.getElementById('dialog-input').value;
+                closeDialog();
+                callback(val);
+            };
+        }
+
+        function toggleSidebar() {
+            if (document.getElementById('dashboard-menu').style.display !== 'none') return;
+            document.getElementById('settingsSidebar').classList.toggle('open');
+            document.getElementById('sidebarToggle').classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            document.getElementById('settingsSidebar').classList.remove('open');
+            document.getElementById('sidebarToggle').classList.remove('active');
+        }
+
+        function goHome() {
+            document.getElementById('dashboard-menu').style.display = 'block';
+            document.getElementById('tool-container').style.display = 'none';
+            document.getElementById('workshop-display').style.display = 'none';
+            document.getElementById('sidebarToggle').style.display = 'none';
+            const backBtn = document.getElementById('back-to-menu-btn');
+            backBtn.href = 'index.html';
+            backBtn.onclick = null;
+            backBtn.innerHTML = '<i class="bi bi-arrow-left me-1"></i> 返回大廳';
+            currentGameMode = 'normal';
+            document.body.classList.remove('workshop-mode-active');
+            closeSidebar();
+        }
+
+        function switchTool(tool) {
+            // Hide dashboard menu
+            document.getElementById('dashboard-menu').style.display = 'none';
+
+            // Workshop uses its own container outside tool-container
+            const isWorkshop = (tool === 'workshop');
+            document.getElementById('tool-container').style.display = isWorkshop ? 'none' : 'block';
+            document.getElementById('workshop-display').style.display = isWorkshop ? 'block' : 'none';
+            document.getElementById('sidebarToggle').style.display = (tool === 'timer' || tool === 'points' || isWorkshop) ? 'none' : 'flex';
+
+            // Hide all sub-displays within tool-container
+            ['lottery-display', 'group-results', 'timer-display', 'session-points-display'].forEach(id => {
+                const el = document.getElementById(id); if (el) el.style.display = 'none';
+            });
+
+            const actionBtn = document.getElementById('main-action-btn');
+            actionBtn.style.display = 'block';
+            document.getElementById('lottery-config').style.display = 'none';
+            document.getElementById('grouping-config').style.display = 'none';
+            document.getElementById('source-config').style.display = 'block';
+
+            currentGameMode = tool;
+
+            const backBtn = document.getElementById('back-to-menu-btn');
+            backBtn.href = '#';
+            backBtn.onclick = (e) => { e.preventDefault(); goHome(); };
+            backBtn.innerHTML = '<i class="bi bi-grid-fill me-1"></i> 返回選單';
+
+            if (tool === 'lottery') {
+                document.getElementById('lottery-display').style.display = 'block';
+                document.getElementById('lottery-config').style.display = 'block';
+                document.getElementById('current-tool-title').textContent = '隨機抽籤';
+                document.getElementById('current-tool-desc').textContent = 'FAIR & RANDOM SELECTION';
+                document.getElementById('action-text').textContent = '開始抽籤';
+            } else if (tool === 'grouping') {
+                document.getElementById('grouping-display').style.display = 'block';
+                document.getElementById('grouping-config').style.display = 'block';
+                document.getElementById('current-tool-title').textContent = '隨機分組';
+                document.getElementById('current-tool-desc').textContent = 'AUTOMATIC TEAM FORMATION';
+                document.getElementById('action-text').textContent = '開始分組';
+            } else if (tool === 'timer') {
+                document.getElementById('timer-display').style.display = 'block';
+                document.getElementById('current-tool-title').textContent = '倒數計時';
+                document.getElementById('current-tool-desc').textContent = 'PRECISION TIMER';
+                actionBtn.style.display = 'none';
+                document.getElementById('source-config').style.display = 'none';
+            } else if (tool === 'points') {
+                document.getElementById('session-points-display').style.display = 'block';
+                document.getElementById('current-tool-title').textContent = '積分管理';
+                document.getElementById('current-tool-desc').textContent = 'REAL-TIME SCOREBOARD';
+                document.getElementById('action-text').textContent = '頒獎儀式';
+                document.getElementById('source-config').style.display = 'none';
+                setPointsTab(pointsView); // initialise tab highlight + render
+            } else if (isWorkshop) {
+                document.body.classList.add('workshop-mode-active');
+                document.getElementById('workshop-init-overlay').style.display = 'flex';
+                switchWorkshopSection('setup');
+            }
+        }
+
+        function selectWorkshopMode(mode) {
+            document.getElementById('workshop-init-overlay').style.display = 'none';
+
+            if (mode === 'random') {
+                // Step 2: Participant Selection Mode
+                renderSelectionOverlay();
+                document.getElementById('people-selection-overlay').style.display = 'flex';
+            } else {
+                switchWorkshopSection('setup');
+            }
+        }
+
+        function switchWorkshopSection(section) {
+            workshopSection = section;
+            document.getElementById('workshop-section-setup').style.display = section === 'setup' ? 'block' : 'none';
+            document.getElementById('workshop-section-dashboard').style.display = section === 'dashboard' ? 'block' : 'none';
+            document.getElementById('workshop-section-scoring').style.display = section === 'scoring' ? 'block' : 'none';
+
+            document.querySelectorAll('.workshop-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if ((section === 'setup' && btn.innerText.includes('隊伍配置')) ||
+                    (section === 'dashboard' && btn.innerText.includes('監測儀表板')) ||
+                    (section === 'scoring' && btn.innerText.includes('計分與結算'))) {
+                    btn.classList.add('active');
+                }
+            });
+
+            if (section === 'setup') renderWorkshopTeams();
+            else if (section === 'dashboard') renderWorkshopDashboard();
+            else if (section === 'scoring') renderWorkshopScoring();
+        }
+
+        function executeTool() {
+            if (currentGameMode === 'workshop') return startWorkshopSession();
+            if (currentGameMode === 'points') return settleSessionPoints();
+
+            const activePool = participants.filter(p => p.active).map(p => p.name);
+            const customPool = document.getElementById('custom-items').value.split('\n').filter(i => i.trim());
+            const pool = document.getElementById('source-people').checked ? activePool : customPool;
+
+            if (pool.length === 0) return showCustomAlert('準備就緒？', '請先選擇或輸入自訂項目。');
+
+            document.getElementById('settingsSidebar').classList.remove('open');
+            document.getElementById('sidebarToggle').classList.remove('active');
+
+            if (currentGameMode === 'lottery') startLottery(pool);
+            else if (currentGameMode === 'grouping') startGrouping(pool);
+        }
+
+        // --- Lottery ---
+        function startLottery(pool) {
+            document.getElementById('lottery-intro').style.display = 'none';
+            document.getElementById('slot-wrapper').style.display = 'block';
+            const rail = document.getElementById('slot-rail');
+            rail.innerHTML = '';
+            for (let i = 0; i < 30; i++) {
+                const item = document.createElement('div');
+                item.className = 'slot-item';
+                item.textContent = pool[Math.floor(Math.random() * pool.length)];
+                rail.appendChild(item);
+            }
+            const winner = pool[Math.floor(Math.random() * pool.length)];
+            rail.lastElementChild.textContent = winner;
+            rail.style.top = '0';
+            setTimeout(() => {
+                rail.style.top = `-${(rail.children.length - 1) * 200}px`;
+                document.getElementById('sound-spin').play().catch(() => { });
+            }, 100);
+            setTimeout(() => {
+                showWinner(winner);
+                document.getElementById('sound-win').play().catch(() => { });
+            }, 3200);
+        }
+
+        function showWinner(name) {
+            document.getElementById('celebration-container').innerHTML = `
+                <div class="celebration-banner">
+                    <h4 class="text-muted fw-bold mb-0" style="letter-spacing: 5px;">WINNER</h4>
+                    <div style="font-size: 5rem; font-weight: 950;">${name}</div>
+                </div>
+            `;
+            document.getElementById('result-overlay').style.display = 'flex';
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        }
+        function closeOverlay() { document.getElementById('result-overlay').style.display = 'none'; }
+
+        // --- Grouping ---
+        function startGrouping(pool) {
+            document.getElementById('grouping-display').style.display = 'none';
+            const count = parseInt(document.getElementById('group-count').value);
+            const shuffled = [...pool].sort(() => Math.random() - 0.5);
+            const results = Array.from({ length: count }, () => []);
+            shuffled.forEach((p, i) => results[i % count].push(p));
+
+            const container = document.getElementById('group-results');
+            container.style.display = 'flex';
+            container.innerHTML = results.map((g, i) => `
+                <div class="col-md-4 col-lg-3">
+                    <div class="group-card" id="group-card-${i}">
+                        <div class="group-title">第 ${i + 1} 組</div>
+                        <div class="text-center py-4 opacity-25">
+                            <i class="bi bi-person-bounding-box fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Shuffling sound
+            new Audio('https://assets.mixkit.co/active_storage/sfx/2627/2627-preview.mp3').play().catch(() => { });
+
+            const deck = document.getElementById('deckBox');
+            deck.classList.add('active');
+            let delay = 0;
+            shuffled.forEach((name, idx) => {
+                setTimeout(() => animateCard(name, idx % count), delay);
+                delay += 150;
+            });
+
+            setTimeout(() => {
+                deck.classList.remove('active');
+                if (currentGameMode === 'workshop') {
+                    // Pre-convert and save results for workshop
+                    workshopTeams = results.map((g, i) => `第 ${i + 1} 小組`);
+                    workshopMembers = {};
+                    results.forEach((g, i) => workshopMembers[`第 ${i + 1} 小組`] = g);
+                    saveWorkshopData();
+                }
+                showGroupOverlay(results);
+            }, delay + 1000);
+        }
+
+        function showGroupOverlay(results) {
+            const overlay = document.getElementById('group-list-overlay');
+            const content = document.getElementById('group-overlay-content');
+            content.innerHTML = results.map((g, i) => `
+                <div class="col-md-4">
+                    <div class="glass-card p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-950 mb-0">第 ${i + 1} 組</h4>
+                            <span class="badge bg-dark rounded-pill px-3">${g.length} 人</span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            ${g.map(name => `<span class="badge bg-light text-dark border py-2 px-3 rounded-pill fw-bold" style="font-size:1.1rem">${name}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            overlay.style.display = 'flex';
+            confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+        }
+
+        function closeGroupOverlay() {
+            document.getElementById('group-list-overlay').style.display = 'none';
+            document.getElementById('group-results').style.display = 'none';
+            if (currentGameMode === 'workshop') {
+                switchWorkshopSection('setup');
+            } else {
+                document.getElementById('grouping-display').style.display = 'block';
+            }
+        }
+
+        function animateCard(name, groupIdx) {
+            const card = document.createElement('div');
+            card.className = 'dealing-card';
+            document.body.appendChild(card);
+            const target = document.getElementById(`group-card-${groupIdx}`);
+            const rect = target.getBoundingClientRect();
+            card.style.setProperty('--target-pos', `translate(calc(${rect.left + rect.width / 2}px - 50vw), calc(${rect.top + rect.height / 2}px - 50vh))`);
+            card.style.animation = 'dealToGroup 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+
+            // Shorter, snappier deal sound
+            new Audio('https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3').play().catch(() => { });
+
+            setTimeout(() => {
+                target.classList.add('flash');
+                setTimeout(() => target.classList.remove('flash'), 300);
+                card.remove();
+            }, 600);
+        }
+
+        // --- Timer ---
+        function setTimer(s) { timerSeconds = s; updateTimerDisplay(); }
+        function updateTimerDisplay() {
+            const m = Math.floor(timerSeconds / 60);
+            const s = timerSeconds % 60;
+            const timeStr = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+            const display = document.getElementById('timer-number');
+            if (display) display.textContent = timeStr;
+
+            const dashDisplay = document.getElementById('workshop-dash-timer');
+            if (dashDisplay) dashDisplay.textContent = timeStr;
+
+            if (timerSeconds <= 10 && timerSeconds > 0) {
+                if (display) display.classList.add('timer-critical');
+                if (dashDisplay) dashDisplay.parentElement.classList.add('timer-critical');
+            } else {
+                if (display) display.classList.remove('timer-critical');
+                if (dashDisplay) dashDisplay.parentElement.classList.remove('timer-critical');
+            }
+        }
+        function toggleTimer() {
+            const btn = document.getElementById('btn-timer-toggle');
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                btn.innerHTML = '<i class="bi bi-play-fill me-2"></i>START';
+                const lbl = document.getElementById('workshop-timer-label');
+                if (lbl) lbl.textContent = '已暫停';
+            } else {
+                timerInterval = setInterval(() => {
+                    timerSeconds--; updateTimerDisplay();
+                    if (timerSeconds <= 10 && timerSeconds > 0) document.getElementById('sound-tick').play().catch(() => { });
+                    if (timerSeconds <= 0) { clearInterval(timerInterval); timerEnded(); }
+                }, 1000);
+                btn.innerHTML = '<i class="bi bi-pause-fill me-2"></i>PAUSE';
+                const lbl = document.getElementById('workshop-timer-label');
+                if (lbl) lbl.textContent = '執行中(點擊暫停)';
+
+                if (currentGameMode === 'workshop') {
+                    callAPI('setWorkshopState', [{
+                        active: true,
+                        startTime: Date.now(),
+                        limit: timerSeconds,
+                        teams: workshopTeams,
+                        members: workshopMembers
+                    }]);
+                }
+            }
+            isTimerRunning = !isTimerRunning;
+        }
+        function timerEnded() {
+            const btn = document.getElementById('btn-timer-toggle');
+            if (currentGameMode === 'workshop') {
+                callAPI('setWorkshopState', [{ active: false, startTime: null, limit: 0, teams: workshopTeams, members: workshopMembers }]);
+                document.getElementById('workshop-time-up-overlay').style.display = 'flex';
+                new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3').play().catch(() => { });
+                confetti({ particleCount: 200, spread: 100, origin: { y: 0.7 } });
+
+                isTimerRunning = false;
+                btn.innerHTML = '<i class="bi bi-play-fill me-2"></i>START';
+                const lbl = document.getElementById('workshop-timer-label');
+                if (lbl) lbl.textContent = '已結束';
+
+                document.getElementById('workshop-status-badge').className = 'badge bg-danger rounded-pill px-3 py-2 fw-bold';
+                document.getElementById('workshop-status-badge').textContent = 'CLOSED';
+            } else {
+                document.getElementById('time-up-overlay').style.display = 'flex';
+                new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3').play().catch(() => { });
+                confetti({ particleCount: 200, spread: 100, origin: { y: 0.7 } });
+                resetTimer();
+            }
+        }
+        function resetTimer() {
+            clearInterval(timerInterval); isTimerRunning = false; timerPoints_Reset(); timerSeconds = 300; updateTimerDisplay();
+            document.getElementById('btn-timer-toggle').innerHTML = '<i class="bi bi-play-fill me-2"></i>START';
+        }
+        function timerPoints_Reset() { } // Internal helper
+        function setCustomTimer() {
+            showCustomPrompt('自訂計時器', '輸入分:秒 (如 02:30)', '', val => {
+                if (!val) return;
+                const p = val.split(':');
+                const s = (parseInt(p[0] || 0) * 60) + (parseInt(p[1] || 0));
+                setTimer(s);
+            });
+        }
+        function extendWorkshopTime(secs) {
+            if (secs) {
+                document.getElementById('workshop-time-up-overlay').style.display = 'none';
+                timerSeconds += secs;
+                // update backend
+                callAPI('setWorkshopState', [{
+                    active: true,
+                    startTime: Date.now(),
+                    limit: timerSeconds,
+                    members: workshopMembers
+                }]);
+                if (!isTimerRunning) toggleTimer();
+                updateTimerDisplay();
+                document.getElementById('workshop-status-badge').className = 'badge bg-primary rounded-pill px-4 py-2 fw-bold fs-6 shadow-sm';
+                document.getElementById('workshop-status-badge').textContent = 'ACTIVE';
+            } else {
+                document.getElementById('workshop-time-up-overlay').style.display = 'none';
+                showCustomPrompt('延長上傳時間', '輸入延長分鐘數 (例如: 5)', '5', val => {
+                    const mins = parseInt(val);
+                    if (!mins) return;
+                    extendWorkshopTime(mins * 60);
+                });
+            }
+        }
+        function endWorkshopAndScore() {
+            document.getElementById('workshop-time-up-overlay').style.display = 'none';
+            switchWorkshopSection('scoring');
+        }
+
+        // Points
+        function setPointsTab(mode) {
+            pointsView = mode;
+            // Update tab highlight
+            ['indiv', 'team', 'customTeam'].forEach(m => {
+                const btn = document.getElementById('pts-tab-' + m);
+                if (!btn) return;
+                if (m === mode) {
+                    btn.style.background = 'rgba(255,255,255,0.15)';
+                    btn.style.color = 'white';
+                } else {
+                    btn.style.background = 'transparent';
+                    btn.style.color = 'rgba(255,255,255,0.45)';
+                }
+            });
+            renderSessionPoints();
+        }
+        function togglePointsView(mode) { setPointsTab(mode); }
+
+        function renderSessionPoints() {
+            const list = document.getElementById('session-points-list');
+            if (!list) return;
+
+            // Shared card style helpers
+            const cardBase = `background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; transition: transform 0.2s, box-shadow 0.2s;`;
+            const scoreBig = `font-size: 2.5rem; font-weight: 950; line-height: 1; color: white;`;
+            const btnMinus = `background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.12); border-radius: 50%; width:36px; height:36px; font-size:1.2rem; font-weight:900; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.15s;`;
+            const btnPlus = `background: rgba(99,102,241,0.5); color: white; border: 1px solid rgba(99,102,241,0.4); border-radius: 50%; width:36px; height:36px; font-size:1.2rem; font-weight:900; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.15s;`;
+
+            if (pointsView === 'indiv') {
+                list.innerHTML = participants.filter(p => p.active).map(p => `
+                    <div class="col-sm-6 col-md-4 col-lg-3">
+                        <div class="p-3" style="${cardBase}">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <div class="fw-bold" style="color:white; font-size:1rem;">${p.name}</div>
+                                    <div class="small" style="color:rgba(255,255,255,0.35);">${p.group || ''}</div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div style="${scoreBig}" id="pts-${p.id}">${sessionPoints[p.id] || 0}</div>
+                                <div class="d-flex gap-2">
+                                    <button style="${btnMinus}" onclick="addPoint('${p.id}',-1)">−</button>
+                                    <button style="${btnPlus}" onclick="addPoint('${p.id}',1)">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } else if (pointsView === 'team') {
+                const teams = [...new Set(participants.filter(p => p.active).map(p => p.group || 'TMS'))];
+                list.innerHTML = teams.map(t => `
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-4" style="${cardBase} border-color: rgba(99,102,241,0.3);">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <div class="small fw-bold mb-1" style="color:rgba(255,255,255,0.35); letter-spacing:3px; text-transform:uppercase;">UNIT</div>
+                                    <h5 class="fw-950 mb-0" style="color:white;">${t}</h5>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div style="${scoreBig} color: #a5b4fc;">${getTeamScore(t)}</div>
+                                <div class="d-flex gap-2">
+                                    <button style="${btnMinus}" onclick="addTeamPoint('${t}',-1)">−</button>
+                                    <button style="${btnPlus}" onclick="addTeamPoint('${t}',1)">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } else if (pointsView === 'customTeam') {
+                const toolbar = `
+                    <div class="col-12 mb-3 d-flex gap-2">
+                        <button class="btn rounded-pill px-4 fw-bold btn-sm" onclick="promptAddCustomTeam()"
+                            style="background:rgba(99,102,241,0.2); color:#a5b4fc; border:1px solid rgba(99,102,241,0.3);">
+                            <i class="bi bi-plus-lg me-1"></i>新增小組
+                        </button>
+                        <button class="btn rounded-pill px-4 fw-bold btn-sm" onclick="confirmResetCustomTeams()"
+                            style="background:rgba(239,68,68,0.1); color:#f87171; border:1px solid rgba(239,68,68,0.2);">
+                            <i class="bi bi-trash me-1"></i>清除全部
+                        </button>
+                    </div>
+                `;
+                const empty = customTeams.length === 0
+                    ? `<div class="col-12 text-center py-5" style="color:rgba(255,255,255,0.3);"><i class="bi bi-people display-4 d-block mb-3"></i>尚未建立自訂小組</div>`
+                    : customTeams.map(t => `
+                    <div class="col-sm-6 col-md-4">
+                        <div class="p-4 position-relative" style="${cardBase} border-color: rgba(34,211,238,0.25);">
+                            <button onclick="removeCustomTeam('${t}')" class="position-absolute" style="top:12px; right:12px; background:rgba(255,255,255,0.07); border:none; border-radius:50%; width:28px; height:28px; color:rgba(255,255,255,0.4); cursor:pointer; font-size:0.75rem;">✕</button>
+                            <div class="small fw-bold mb-1" style="color:rgba(255,255,255,0.35); letter-spacing:3px; text-transform:uppercase;">TEAM</div>
+                            <h5 class="fw-950 mb-3" style="color:white;">${t}</h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div style="${scoreBig} color: #67e8f9;">${sessionPoints[t] || 0}</div>
+                                <div class="d-flex gap-2">
+                                    <button style="${btnMinus}" onclick="addCustomTeamPoint('${t}',-1)">−</button>
+                                    <button style="background: rgba(6,182,212,0.4); color:white; border:1px solid rgba(6,182,212,0.4); border-radius:50%; width:36px; height:36px; font-size:1.2rem; font-weight:900; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="addCustomTeamPoint('${t}',1)">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                list.innerHTML = toolbar + empty;
+            }
+            syncHonorWall();
+        }
+
+        function promptAddCustomTeam() {
+            showCustomPrompt('新增自訂小組', '請輸入隊伍名稱', '隊伍A', val => {
+                if (!val || customTeams.includes(val)) return;
+                customTeams.push(val);
+                localStorage.setItem('seedpro_custom_teams', JSON.stringify(customTeams));
+                renderSessionPoints();
+            });
+        }
+        function removeCustomTeam(team) {
+            customTeams = customTeams.filter(t => t !== team);
+            delete sessionPoints[team];
+            localStorage.setItem('seedpro_custom_teams', JSON.stringify(customTeams));
+            renderSessionPoints();
+        }
+        function confirmResetCustomTeams() {
+            showCustomPrompt('確定清空自訂小組？', '請輸入 CLEAR', 'CLEAR', val => {
+                if (val === 'CLEAR') {
+                    customTeams.forEach(t => delete sessionPoints[t]);
+                    customTeams = [];
+                    localStorage.setItem('seedpro_custom_teams', JSON.stringify(customTeams));
+                    renderSessionPoints();
+                }
+            });
+        }
+        function addCustomTeamPoint(t, v) {
+            sessionPoints[t] = (sessionPoints[t] || 0) + v;
+            renderSessionPoints();
+        }
+
+        function addPoint(id, v) { sessionPoints[id] = (sessionPoints[id] || 0) + v; renderSessionPoints(); }
+
+        // Team-mode points are stored with a dedicated prefix key to avoid collision with individual IDs
+        function teamKey(t) { return '__team__' + t; }
+        function addTeamPoint(t, v) {
+            const k = teamKey(t);
+            sessionPoints[k] = (sessionPoints[k] || 0) + v;
+            renderSessionPoints();
+        }
+        function getTeamScore(t) {
+            return sessionPoints[teamKey(t)] || 0;
+        }
+
+        function syncHonorWall() {
+            let data = [];
+            if (pointsView === 'customTeam') {
+                data = customTeams.map(t => ({ id: t, name: t, group: '自訂小組', points: sessionPoints[t] || 0 }));
+            } else if (pointsView === 'team') {
+                // Read from dedicated team keys
+                const teams = [...new Set(participants.filter(p => p.active).map(p => p.group || 'TMS'))];
+                data = teams.map(t => ({ id: t, name: t, group: '單位', points: sessionPoints[teamKey(t)] || 0 }));
+            } else {
+                // indiv mode
+                data = participants.filter(p => p.active).map(p => ({ id: p.id, name: p.name, group: p.group || '', points: sessionPoints[p.id] || 0 }));
+            }
+            // Store current mode so buzzer.html can display proper label
+            localStorage.setItem('seedpro_points_mode', pointsView);
+            localStorage.setItem('seedpro_session_scores', JSON.stringify(data));
+        }
+
+        function settleSessionPoints() {
+            const sorted = [];
+            if (pointsView === 'customTeam') {
+                customTeams.forEach(t => sorted.push({ name: t, score: sessionPoints[t] || 0 }));
+            } else if (pointsView === 'team') {
+                const teams = [...new Set(participants.filter(p => p.active).map(p => p.group || 'TMS'))];
+                teams.forEach(t => sorted.push({ name: t, score: sessionPoints[teamKey(t)] || 0 }));
+            } else {
+                participants.filter(p => p.active).forEach(p => sorted.push({ name: p.name, score: sessionPoints[p.id] || 0 }));
+            }
+            sorted.sort((a, b) => b.score - a.score);
+            if (sorted.length === 0 || sorted[0].score === 0) return showCustomAlert('尚無資料', '分數需大於0才能結算。');
+            localStorage.setItem('seedpro_ceremony_trigger', JSON.stringify({ timestamp: Date.now(), winners: sorted.slice(0, 3) }));
+            showCustomAlert('頒獎啟動', '大會榮譽牆已同步顯示前三名！');
+        }
+
+        // --- Workshop Management ---
+        function renderWorkshopTeams() {
+            const container = document.getElementById('workshop-teams-config-list');
+            const countEl = document.getElementById('workshop-team-count');
+            if (!container) return;
+            countEl.textContent = workshopTeams.length;
+
+            if (workshopTeams.length === 0) {
+                container.innerHTML = '<div class="col-12 text-center py-5 text-muted">尚未建立隊伍，點擊右上角新增。</div>';
+                return;
+            }
+
+            container.innerHTML = workshopTeams.map((t, i) => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="workshop-team-config-card">
+                        <div class="workshop-team-card-header">
+                            <h6 class="fw-950 mb-0">${t}</h6>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-light border" onclick="promptAddWorkshopMember('${t}')"><i class="bi bi-plus-lg"></i></button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeWorkshopTeam(${i})"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="workshop-member-list">
+                            ${(workshopMembers[t] || []).map((m, mi) => `
+                                <div class="workshop-member-pill">
+                                    ${m} <i class="bi bi-x btn-remove" onclick="removeWorkshopMember('${t}', ${mi})"></i>
+                                </div>
+                            `).join('') || '<div class="text-muted small">暫無成員</div>'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function promptAddWorkshopTeam() {
+            showCustomPrompt('建立隊伍', '請輸入隊伍名稱', '隊伍 A', name => {
+                if (!name || workshopTeams.includes(name)) return;
+                workshopTeams.push(name);
+                workshopMembers[name] = [];
+                saveWorkshopData();
+                renderWorkshopTeams();
+            });
+        }
+
+        function promptAddWorkshopMember(team) {
+            showCustomPrompt(`新增成員 到 ${team}`, '請輸入姓名', '王小名', name => {
+                if (!name) return;
+                workshopMembers[team].push(name);
+                saveWorkshopData();
+                renderWorkshopTeams();
+            });
+        }
+
+        function removeWorkshopMember(team, idx) {
+            workshopMembers[team].splice(idx, 1);
+            saveWorkshopData();
+            renderWorkshopTeams();
+        }
+
+        function distributeMembersRandomly() {
+            const activePool = participants.filter(p => p.active).map(p => p.name);
+            if (activePool.length === 0) return showCustomAlert('無名單', '請先確認名冊學員已勾選。');
+            if (workshopTeams.length === 0) return showCustomAlert('無隊伍', '請先手動新增隊伍。');
+
+            const shuffled = [...activePool].sort(() => Math.random() - 0.5);
+            workshopTeams.forEach(t => workshopMembers[t] = []);
+            shuffled.forEach((name, i) => {
+                const team = workshopTeams[i % workshopTeams.length];
+                workshopMembers[team].push(name);
+            });
+            saveWorkshopData();
+            renderWorkshopTeams();
+            showCustomAlert('分配完成', '學員已隨機分配至各小組。');
+        }
+
+        function removeWorkshopTeam(idx) {
+            const team = workshopTeams[idx];
+            delete workshopMembers[team];
+            workshopTeams.splice(idx, 1);
+            saveWorkshopData();
+            renderWorkshopTeams();
+        }
+
+        function resetWorkshopTeams() {
+            workshopTeams = [];
+            workshopMembers = {};
+            saveWorkshopData();
+            renderWorkshopTeams();
+        }
+
+        function saveWorkshopData() {
+            localStorage.setItem('seedpro_workshop_teams', JSON.stringify(workshopTeams));
+            localStorage.setItem('seedpro_workshop_members', JSON.stringify(workshopMembers));
+            localStorage.setItem('seedpro_workshop_points', JSON.stringify(workshopPoints));
+        }
+
+        async function startWorkshopSession() {
+            if (workshopTeams.length === 0) return showCustomAlert('無隊伍', '請先建立隊伍或完成隨機分配。');
+
+            showCustomPrompt('設定研討時間', '請輸入分鐘數 (例如: 10)', '10', async timeVal => {
+                const mins = parseInt(timeVal);
+                if (!mins) return;
+
+                if (isTimerRunning) {
+                    clearInterval(timerInterval);
+                    isTimerRunning = false;
+                }
+                setTimer(mins * 60);
+
+                // The toggleTimer() function now handles sending the setWorkshopState API call and starting the timer interval.
+                // It also updates the button text.
+                toggleTimer();
+
+                switchWorkshopSection('dashboard');
+                document.getElementById('workshop-status-badge').className = 'badge bg-primary rounded-pill px-3 py-2 fw-bold';
+                document.getElementById('workshop-status-badge').textContent = 'ACTIVE';
+                renderWorkshopDashboard();
+                document.getElementById('workshop-status-text').textContent = '檔案繳交監測連線中...';
+
+                generateWorkshopQR();
+                document.getElementById('main-action-btn').style.display = 'none';
+                showCustomAlert('工作坊啟動', '學員連線已開啟，請手動點擊計時器開始倒數。');
+
+                // Start dashboard polling
+                startDashboardPolling();
+            });
+        }
+
+        let dashboardPollInterval = null;
+        function startDashboardPolling() {
+            if (dashboardPollInterval) clearInterval(dashboardPollInterval);
+            dashboardPollInterval = setInterval(async () => {
+                if (workshopSection !== 'dashboard') return;
+                const res = await callAPI('getWorkshopUploads');
+                if (res.success) {
+                    renderWorkshopDashboard(res.uploads);
+                }
+            }, 5000);
+        }
+
+        function generateWorkshopQR() {
+            const container = document.getElementById('workshop-qr-container');
+            if (!container) return;
+            container.innerHTML = '';
+            const url = window.location.href.split('interaction.html')[0] + 'workshop.html';
+            new QRCode(container, {
+                text: url,
+                width: 150,
+                height: 150,
+                colorDark: "#1e293b",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        async function confirmResetWorkshop() {
+            showCustomPrompt('結束並重置？', '此動作將清空後端所有紀錄，請輸入 RESET', 'RESET', async v => {
+                if (v === 'RESET') {
+                    showLoading();
+                    await callAPI('setWorkshopState', [null]);
+                    hideLoading();
+
+                    if (dashboardPollInterval) clearInterval(dashboardPollInterval);
+                    workshopTeams = [];
+                    workshopMembers = {};
+                    saveWorkshopData();
+                    renderWorkshopDashboard();
+                    document.getElementById('main-action-btn').style.display = 'block';
+                    showCustomAlert('已重置', '工作坊紀錄已從雲端與本地端清除。');
+                }
+            });
+        }
+
+        async function endWorkshopSession() {
+            showCustomPrompt('停止並結算？', '停止繳交權限，並結算成績，請輸入 END', 'END', async v => {
+                if (v === 'END') {
+                    showLoading();
+
+                    if (isTimerRunning) {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        document.getElementById('btn-timer-toggle').textContent = 'START';
+                        const lbl = document.getElementById('workshop-timer-label');
+                        if (lbl) lbl.textContent = '已結束';
+                    }
+
+                    const status = {
+                        active: false,
+                        startTime: null,
+                        limit: 0,
+                        teams: workshopTeams,
+                        members: workshopMembers
+                    };
+
+                    await callAPI('setWorkshopState', [status]);
+                    hideLoading();
+
+                    showCustomAlert('已結算', '工作坊繳交已截止，無法再上傳。');
+                    document.getElementById('workshop-status-badge').className = 'badge bg-danger rounded-pill px-3 py-2 fw-bold';
+                    document.getElementById('workshop-status-badge').textContent = 'CLOSED';
+                }
+            });
+        }
+
+        function renderWorkshopDashboard(uploadsList = null) {
+            const uploads = uploadsList || [];
+            const container = document.getElementById('workshop-dashboard-cards');
+            if (!container) return;
+
+            // Update header stats
+            const submitCount = document.getElementById('workshop-submit-count');
+            if (submitCount) submitCount.textContent = uploads.length;
+            const totalTeams = document.getElementById('workshop-total-teams');
+            if (totalTeams) totalTeams.textContent = workshopTeams.length;
+
+            // Update progress bar
+            const progressBar = document.getElementById('workshop-progress-bar');
+            if (progressBar && workshopTeams.length > 0) {
+                const pct = Math.round((uploads.length / workshopTeams.length) * 100);
+                progressBar.style.width = pct + '%';
+                progressBar.setAttribute('aria-valuenow', pct);
+                progressBar.style.background = pct === 100
+                    ? 'linear-gradient(90deg, #00b894, #00cec9)'
+                    : 'linear-gradient(90deg, #6366f1, var(--accent-purple))';
+            }
+
+            container.innerHTML = workshopTeams.map((t, i) => {
+                const submission = uploads.find(u => u.team === t);
+                const rank = submission ? uploads.indexOf(submission) + 1 : 0;
+
+                return `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="dashboard-status-card ${submission ? 'submitted' : ''}">
+                            ${rank ? `<div class="rank-badge rank-${rank <= 3 ? rank : 'other'}">${rank}</div>` : ''}
+                            <h4 class="fw-950 mb-4">${t}</h4>
+                            <div class="d-flex flex-column gap-2 mb-4">
+                                <div class="small fw-bold text-muted">目前成員</div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    ${(workshopMembers[t] || []).map(m => `<span class="badge bg-light text-dark rounded-pill border">${m}</span>`).join('') || '尚無分配'}
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                ${submission ? `
+                                    <div class="text-primary fw-900"><i class="bi bi-clock-fill me-1"></i> ${new Date(submission.timestamp).toLocaleTimeString()}</div>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-dark rounded-pill px-3 btn-sm" onclick="viewSubmission('${submission.data}')">查看</button>
+                                        <button class="btn btn-outline-danger rounded-pill px-3 btn-sm" onclick="deleteUpload('${t}')"><i class="bi bi-unlock-fill"></i> 重設</button>
+                                    </div>
+                                ` : `
+                                    <div class="text-muted opacity-50 fw-bold"><i class="bi bi-hourglass-split me-1"></i> 等待中...</div>
+                                `}
+                            </div>
+                            <div class="status-glow"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function deleteUpload(team) {
+            showCustomPrompt('開放重新上傳', `確定要刪除 ${team} 的繳交紀錄，讓他們能重新上傳嗎？請輸入 DEL 確認`, 'DEL', async v => {
+                if (v === 'DEL') {
+                    showLoading('處理中...');
+                    const res = await callAPI('deleteWorkshopUpload', [team]);
+                    hideLoading();
+                    if (res.success) {
+                        // Optimistically re-render dashboard cards and scoring
+                        renderWorkshopDashboard();
+                        renderWorkshopScoring();
+                        showCustomPrompt('提示', `${team} 的紀錄已清除，請重新上傳。`, '');
+                    } else {
+                        showCustomPrompt('錯誤', '清除失敗：' + res.message, '');
+                    }
+                }
+            });
+        }
+
+        async function renderWorkshopScoring() {
+            const list = document.getElementById('workshop-scoring-list');
+            if (!list) return;
+
+            // fetch uploads to show status
+            const res = await callAPI('getWorkshopUploads');
+            let uploads = [];
+            if (res.success) uploads = res.uploads;
+
+            list.innerHTML = workshopTeams.map(t => {
+                const pts = workshopPoints[t] || 0;
+                const submission = uploads.find(u => u.team === t);
+                return `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="dashboard-status-card ${submission ? 'submitted' : ''}">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="fw-950 mb-0">${t}</h4>
+                                <div class="badge ${submission ? 'bg-success' : 'bg-secondary'} rounded-pill px-3 py-2">
+                                    ${submission ? '已繳交' : '未繳交'}
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-4">
+                                <div class="fw-950 flex-grow-1" style="font-size: 3rem; color: var(--primary-dark);">${pts} <span class="fs-5 text-muted">分</span></div>
+                                <div class="d-flex flex-column gap-2">
+                                    <button class="btn btn-dark fw-bold px-4 rounded-pill" onclick="addWorkshopPoint('${t}', 1)">+1 分</button>
+                                    <button class="btn btn-outline-danger px-4 rounded-pill" onclick="addWorkshopPoint('${t}', -1)">-1 分</button>
+                                </div>
+                            </div>
+                            ${submission ? `<button class="btn btn-outline-primary fw-900 w-100 mt-4 rounded-pill py-2" onclick="viewSubmission('${submission.data}')"><i class="bi bi-eye-fill"></i> 查看作品</button>` : ''}
+                            <div class="status-glow"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function addWorkshopPoint(t, v) {
+            workshopPoints[t] = (workshopPoints[t] || 0) + v;
+            saveWorkshopData();
+            renderWorkshopScoring();
+        }
+
+        // --- Showcase Mode ---
+        let showcaseList = [];
+        let showcaseIndex = 0;
+
+        async function startShowcase() {
+            showLoading('準備資料...');
+            const res = await callAPI('getWorkshopUploads');
+            hideLoading();
+            if (!res.success) return showCustomPrompt('提示', '無法取得繳交紀錄。', '');
+
+            showcaseList = res.uploads;
+            if (showcaseList.length === 0) return showCustomPrompt('提示', '目前還沒有任何隊伍繳交！', '');
+
+            showcaseIndex = 0;
+            document.getElementById('showcase-overlay').style.display = 'flex';
+            renderShowcaseCurrent();
+        }
+
+        function renderShowcaseCurrent() {
+            if (!showcaseList[showcaseIndex]) return;
+            const upload = showcaseList[showcaseIndex];
+            const imgEl = document.getElementById('showcase-image');
+            imgEl.style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('showcase-team-name').innerText = upload.team + ` (${showcaseIndex + 1}/${showcaseList.length})`;
+                imgEl.src = upload.data;
+                document.getElementById('showcase-team-score').innerText = (workshopPoints[upload.team] || 0);
+                imgEl.style.opacity = '1';
+            }, 300);
+        }
+
+        function nextShowcase() {
+            if (showcaseIndex < showcaseList.length - 1) {
+                showcaseIndex++;
+                renderShowcaseCurrent();
+            }
+        }
+
+        function prevShowcase() {
+            if (showcaseIndex > 0) {
+                showcaseIndex--;
+                renderShowcaseCurrent();
+            }
+        }
+
+        function closeShowcase() {
+            document.getElementById('showcase-overlay').style.display = 'none';
+            renderWorkshopScoring();
+        }
+
+        function addShowcasePoint(v) {
+            if (!showcaseList[showcaseIndex]) return;
+            const team = showcaseList[showcaseIndex].team;
+            addWorkshopPoint(team, v);
+            document.getElementById('showcase-team-score').innerText = (workshopPoints[team] || 0);
+
+            // Give a quick visual feedback
+            const scoreEl = document.getElementById('showcase-team-score');
+            scoreEl.style.color = v > 0 ? '#00b894' : '#d63031';
+            scoreEl.style.transform = 'scale(1.5)';
+            setTimeout(() => {
+                scoreEl.style.color = '';
+                scoreEl.style.transform = 'scale(1)';
+            }, 300);
+        }
+
+        // Keyboard shortcuts for showcase mode
+        document.addEventListener('keydown', (e) => {
+            const overlay = document.getElementById('showcase-overlay');
+            if (!overlay || overlay.style.display === 'none') return;
+            if (e.key === 'ArrowRight') nextShowcase();
+            else if (e.key === 'ArrowLeft') prevShowcase();
+            else if (e.key === '=' || e.key === '+') addShowcasePoint(1);
+            else if (e.key === '-') addShowcasePoint(-1);
+            else if (e.key === 'Escape') closeShowcase();
+        });
+
+        function viewSubmission(data) {
+            document.getElementById('celebration-container').innerHTML = `
+                <div class="p-4 bg-white rounded-5 shadow-lg animate__animated animate__zoomIn" style="max-width: 90vw; max-height: 90vh; overflow: auto; position: relative;">
+                    <button class="btn-close position-absolute top-0 end-0 m-3" onclick="closeOverlay()"></button>
+                    <img src="${data}" style="max-width: 100%; height: auto; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                    <div class="mt-4 text-center">
+                        <button class="btn btn-outline-dark rounded-pill px-5" onclick="closeOverlay()">關閉視窗</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('result-overlay').style.display = 'flex';
+        }
+        function openWorkshopFile(data) {
+            const win = window.open("");
+            win.document.write(`<html><body style="margin:0;display:flex;justify-content:center;align-items:center;background:#000;"><img src="${data}" style="max-width:100%;max-height:100%;"></body></html>`);
+        }
+        function loadPreferredEffect() { }
+        function renderPeople() {
+            const list = document.getElementById('people-list'); if (!list) return;
+            const search = document.getElementById('search-person').value.toLowerCase();
+            const filtered = participants.filter(p => (p.name || '').toLowerCase().includes(search));
+            list.innerHTML = filtered.map(p => `<div class="person-pill ${p.active ? '' : 'inactive'} ${p.source === 'temp' ? 'custom' : ''}" onclick="togglePerson('${p.id}')">${p.name || '未命名'}</div>`).join('');
+            const countEl = document.getElementById('count-active'); if (countEl) countEl.textContent = participants.filter(p => p.active).length;
+        }
+        function togglePerson(id) { const p = participants.find(x => x.id === id); if (p) p.active = !p.active; renderPeople(); }
+        function selectAll(v) { participants.forEach(p => p.active = v); renderPeople(); }
+        function addTempPerson() { const v = document.getElementById('temp-name').value.trim(); if (!v) return; participants.unshift({ id: 'T' + Date.now(), name: v, active: true, source: 'temp' }); document.getElementById('temp-name').value = ''; renderPeople(); }
+        function toggleSource(s) { document.getElementById('people-selector').style.display = s === 'people' ? 'block' : 'none'; document.getElementById('custom-selector').style.display = s === 'custom' ? 'block' : 'none'; }
+        function confirmResetPoints() { showCustomPrompt('確定重置？', '請輸入 RESET', 'RESET', v => { if (v === 'RESET') { sessionPoints = {}; renderSessionPoints(); } }); }
+
+        // --- New Selection Overlay Logic ---
+        function renderSelectionOverlay() {
+            const grid = document.getElementById('selection-grid');
+            const search = document.getElementById('overlay-search').value.toLowerCase();
+            const filtered = participants.filter(p => (p.name || '').toLowerCase().includes(search));
+
+            grid.innerHTML = filtered.map(p => `
+                <div class="selection-pill ${p.active ? 'active' : ''}" onclick="togglePerson('${p.id}'); renderSelectionOverlay();">
+                    <span class="name-text">${p.name}</span>
+                    <span class="unit-text">${p.group || 'TMS'}</span>
+                </div>
+            `).join('');
+        }
+
+        function confirmWorkshopGrouping() {
+            const activePool = participants.filter(p => p.active).map(p => p.name);
+            if (activePool.length === 0) return showCustomAlert('名單為空', '請至少選擇一位學員參加。');
+
+            showCustomPrompt('隨機分組', '請輸入欲產生的組數', '4', val => {
+                const count = parseInt(val);
+                if (!count || count < 2) return;
+                document.getElementById('group-count').value = count;
+                document.getElementById('people-selection-overlay').style.display = 'none';
+                startGrouping(activePool);
+            });
+        }
+
+        async function nextWorkshopRound() {
+            showCustomPrompt('繼續下一局', '這將清空所有繳交紀錄，並保留目前人員分組。請輸入 NEXT', 'NEXT', async v => {
+                if (v === 'NEXT') {
+                    showLoading();
+                    await callAPI('setWorkshopState', [null]); // clear uploads backend
+                    const status = { active: false, startTime: null, limit: 300, teams: workshopTeams, members: workshopMembers };
+                    await callAPI('setWorkshopState', [status]); // wait mode
+                    hideLoading();
+
+                    resetTimer();
+                    document.getElementById('workshop-status-text').textContent = '檔案繳交監測中...';
+                    switchTool('workshop');
+                    switchWorkshopSection('dashboard');
+                }
+            });
+        }
+
+        async function finalizeWorkshop() {
+            showCustomPrompt('結束並結算', '工作坊結束，紀錄將被刪除。請輸入 FINISH', 'FINISH', async v => {
+                if (v === 'FINISH') {
+                    showLoading();
+                    await callAPI('setWorkshopState', [null]);
+                    hideLoading();
+
+                    const sorted = workshopTeams
+                        .map(t => ({ name: t, score: workshopPoints[t] || 0 }))
+                        .sort((a, b) => b.score - a.score);
+
+                    showPodium(sorted);
+
+                    workshopTeams = [];
+                    workshopMembers = {};
+                    workshopPoints = {};
+                    saveWorkshopData();
+                    setTimeout(() => window.location.reload(), 14000);
+                }
+            });
+        }
+
+        function showPodium(sorted) {
+            const top3 = sorted.slice(0, 3);
+            // Visual order: Silver (left), Gold (center, tallest), Bronze (right)
+            const SLOTS = [
+                { idx: 1, cls: 'silver', medal: '🥈', height: '52%', barDelay: '0.3s', infoDelay: '1.0s' },
+                { idx: 0, cls: 'gold', medal: '🥇', height: '80%', barDelay: '0.0s', infoDelay: '0.8s' },
+                { idx: 2, cls: 'bronze', medal: '🥉', height: '36%', barDelay: '0.5s', infoDelay: '1.2s' },
+            ];
+
+            const winnerEl = document.getElementById('podium-winner-name');
+            if (top3[0]) winnerEl.textContent = top3[0].name + ' 奪冠！';
+            else winnerEl.textContent = '工作坊結束';
+
+            const stage = document.getElementById('podium-stage');
+            stage.innerHTML = SLOTS.map(slot => {
+                const team = top3[slot.idx];
+                if (!team) return `<div class="podium-slot"></div>`;
+                return `
+                    <div class="podium-slot">
+                        <div class="podium-team-info"
+                             style="animation: fadeInUp 0.7s ${slot.infoDelay} ease forwards;">
+                            <div class="podium-medal">${slot.medal}</div>
+                            <div class="podium-team-name">${team.name}</div>
+                            <div class="podium-score">${team.score}<span class="podium-score-unit"> 分</span></div>
+                        </div>
+                        <div class="podium-bar ${slot.cls}"
+                             style="height: ${slot.height}; animation: riseUp 1.0s ${slot.barDelay} cubic-bezier(0.16,1,0.3,1) forwards;">
+                            <div class="podium-rank-num">${slot.idx + 1}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Fallback for single/no team
+            if (sorted.length === 0) {
+                stage.innerHTML = `<div style="text-align:center;padding:80px 0;"><div style="font-size:4rem">🎉</div><div style="font-size:2rem;font-weight:950;margin-top:20px;">感謝所有參與者</div></div>`;
+            }
+
+            document.getElementById('podium-overlay').style.display = 'flex';
+
+            // Staggered confetti bursts
+            setTimeout(() => confetti({ particleCount: 100, spread: 80, angle: 60, origin: { x: 0.05, y: 0.6 }, colors: ['#fdcb6e', '#ffeaa7', '#e17055'] }), 900);
+            setTimeout(() => confetti({ particleCount: 100, spread: 80, angle: 120, origin: { x: 0.95, y: 0.6 }, colors: ['#74b9ff', '#a29bfe', '#fd79a8'] }), 1100);
+            setTimeout(() => confetti({ particleCount: 150, spread: 120, startVelocity: 45, origin: { x: 0.5, y: 0.3 }, colors: ['#ffffff', '#ffeaa7', '#fdcb6e'] }), 1600);
+        }
+
+        function closePodium() {
+            document.getElementById('podium-overlay').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

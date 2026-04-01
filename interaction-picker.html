@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動工具特效預覽 | Seed Pro+</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary-dark: #2d3436;
+            --primary-bg: #fcfcfc;
+            --accent-purple: #6c5ce7;
+            --border-color: #f0f0f0;
+        }
+
+        body {
+            background-color: var(--primary-bg);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(108, 92, 231, 0.03) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(9, 132, 227, 0.03) 0px, transparent 50%);
+            color: var(--primary-dark);
+            font-family: "Inter", "Noto Sans TC", sans-serif;
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+
+        .header-section {
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        .header-section h1 {
+            font-weight: 950;
+            letter-spacing: -1px;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .preview-box {
+            background: white;
+            border: 2px dashed #ddd;
+            border-radius: 32px;
+            height: 350px;
+            margin-bottom: 40px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.02);
+            background-image: radial-gradient(#eee 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* Celebration Animation Keyframes */
+        @keyframes anim-classic {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-bottom {
+            0% {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-pop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            80% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-flip {
+            0% {
+                transform: rotateX(90deg);
+                opacity: 0;
+            }
+
+            100% {
+                transform: rotateX(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-blur {
+            0% {
+                filter: blur(20px);
+                opacity: 0;
+                transform: scale(1.2);
+            }
+
+            100% {
+                filter: blur(0);
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes anim-roll {
+            0% {
+                transform: translateX(-100%) rotate(-180deg);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateX(0) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-top {
+            0% {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-pulse {
+            0% {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-zoom {
+            0% {
+                clip-path: circle(0% at 50% 50%);
+                opacity: 0;
+            }
+
+            100% {
+                clip-path: circle(100% at 50% 50%);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-bounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-30px);
+            }
+
+            60% {
+                transform: translateY(-15px);
+            }
+        }
+
+        .celebration-banner {
+            background: white;
+            padding: 30px 60px;
+            border-radius: 60px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .sound-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            height: 100%;
+        }
+
+        .sound-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-purple);
+            box-shadow: 0 10px 25px rgba(108, 92, 231, 0.1);
+        }
+
+        .sound-card.active {
+            border: 2px solid var(--accent-purple);
+            background: #f9f8ff;
+            box-shadow: 0 15px 35px rgba(108, 92, 231, 0.15);
+        }
+
+        .btn-confirm {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 16px 50px;
+            border-radius: 50px;
+            font-weight: 800;
+            background: var(--primary-dark);
+            color: white;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.2);
+            border: none;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .btn-confirm:hover {
+            transform: translateX(-50%) translateY(-3px);
+            background: #000;
+        }
+
+        .type-badge {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            display: block;
+            color: #b2bec3;
+        }
+
+        .icon-box {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: var(--accent-purple);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container py-4">
+        <div class="header-section">
+            <div class="d-flex justify-content-center mb-3">
+                <a href="interaction.html" class="btn btn-sm btn-outline-dark rounded-pill">
+                    <i class="bi bi-arrow-left"></i> 返回工具箱
+                </a>
+            </div>
+            <h1>互動工具特效預覽</h1>
+            <p class="text-muted">選擇您喜歡的展示風格，適用於「隨機抽籤」揭曉與「隨機分組」完成時刻</p>
+        </div>
+
+        <div class="preview-box" id="previewBox">
+            <div id="activeBannerPlaceholder">
+                <div class="text-center opacity-25">
+                    <i class="bi bi-play-circle display-1"></i>
+                    <p class="mt-2 fw-bold">點擊下方選項開始預覽</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-3 col-6">
+                <div class="sound-card" id="card-anim-classic" onclick="playEffect('anim-classic', '經典櫃檯鈴')">
+                    <span class="type-badge">Classic</span>
+                    <div class="icon-box"><i class="bi bi-bell"></i></div>
+                    <div class="fw-bold">經典櫃檯鈴</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="sound-card" id="card-anim-bottom" onclick="playEffect('anim-bottom', '溫馨門鈴聲')">
+                    <span class="type-badge">Gentle</span>
+                    <div class="icon-box"><i class="bi bi-house-heart"></i></div>
+                    <div class="fw-bold">溫馨門鈴聲</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="sound-card" id="card-anim-pop" onclick="playEffect('anim-pop', '清脆小按鈕')">
+                    <span class="type-badge">Minimal</span>
+                    <div class="icon-box"><i class="bi bi-fingerprint"></i></div>
+                    <div class="fw-bold">清脆小按鈕</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="sound-card" id="card-anim-flip" onclick="playEffect('anim-flip', '專業閃光燈')">
+                    <span class="type-badge">Mech</span>
+                    <div class="icon-box"><i class="bi bi-camera"></i></div>
+                    <div class="fw-bold">專業閃光燈</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="sound-card" id="card-anim-blur" onclick="playEffect('anim-blur', '氣泡彈跳')">
+                    <span class="type-badge">Fun</span>
+                    <div class="icon-box"><i class="bi bi-chat-heart"></i></div>
+                    <div class="fw-bold">氣泡彈跳</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="sound-card" id="card-anim-roll" onclick="playEffect('anim-roll', '水滴落聲')">
+                    <span class="type-badge">Natural</span>
+                    <div class="icon-box"><i class="bi bi-droplet"></i></div>
+                    <div class="fw-bold">水滴落聲</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="sound-card" id="card-anim-top" onclick="playEffect('anim-top', '快門聲')">
+                    <span class="type-badge">Action</span>
+                    <div class="icon-box"><i class="bi bi-record-circle"></i></div>
+                    <div class="fw-bold">快門聲</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="sound-card" id="card-anim-pulse" onclick="playEffect('anim-pulse', '輕型敲擊')">
+                    <span class="type-badge">Subtle</span>
+                    <div class="icon-box"><i class="bi bi-hand-index"></i></div>
+                    <div class="fw-bold">輕型敲擊</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="sound-card" id="card-anim-zoom" onclick="playEffect('anim-zoom', '玻璃清脆')">
+                    <span class="type-badge">Premium</span>
+                    <div class="icon-box"><i class="bi bi-gem"></i></div>
+                    <div class="fw-bold">玻璃清脆</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="sound-card" id="card-anim-bounce" onclick="playEffect('anim-bounce', '數位成功音')">
+                    <span class="type-badge">Tech</span>
+                    <div class="icon-box"><i class="bi bi-cpu"></i></div>
+                    <div class="fw-bold">數位成功音</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-confirm" onclick="saveAndReturn()">套用並返回工具箱</button>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz4kiWGCG96zZHAJgc-wOAaCxOkS7WXf5IriAEKk0StXYFNVlME7x2SjaSva3Rp8obX/exec';
+        const soundData = {
+            'anim-classic': { url: 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3', confetti: 'classic' },
+            'anim-bottom': { url: 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/door_bell.mp3', confetti: 'gentle' },
+            'anim-pop': { url: 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/button_tiny.mp3', confetti: 'minimal' },
+            'anim-flip': { url: 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/camera_flashing.mp3', confetti: 'mech' },
+            'anim-blur': { url: 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/pop_drop.mp3', confetti: 'fun' },
+            'anim-roll': { url: 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/water_droplet.mp3', confetti: 'natural' },
+            'anim-top': { url: 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/snap.mp3', confetti: 'action' },
+            'anim-pulse': { url: 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/tap.mp3', confetti: 'subtle' },
+            'anim-zoom': { url: 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3', confetti: 'premium' },
+            'anim-bounce': { url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3', confetti: 'tech' }
+        };
+
+        let selectedAnim = localStorage.getItem('interaction_preferred_anim') || 'anim-bounce';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const activeCard = document.getElementById('card-' + selectedAnim);
+            if (activeCard) activeCard.classList.add('active');
+        });
+
+        function playEffect(animClass, name) {
+            selectedAnim = animClass;
+
+            // UI Update
+            document.querySelectorAll('.sound-card').forEach(c => c.classList.remove('active'));
+            document.getElementById('card-' + animClass).classList.add('active');
+
+            const previewBox = document.getElementById('previewBox');
+            previewBox.innerHTML = '';
+
+            // Create Banner
+            const banner = document.createElement('div');
+            banner.className = 'celebration-banner';
+            banner.style.animation = `${animClass} 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
+            banner.innerHTML = `
+                <h4 class="text-muted fw-bold mb-0" style="letter-spacing: 5px;">WINNER</h4>
+                <div style="font-size: 5rem; font-weight: 950; line-height: 1;">幸運兒姓名</div>
+                <div class="mt-2 text-muted small">動效：${animClass}</div>
+            `;
+            previewBox.appendChild(banner);
+
+            // Play Sound
+            const audio = new Audio(soundData[animClass].url);
+            audio.play().catch(() => { });
+
+            // Confetti
+            if (soundData[animClass].confetti === 'premium') {
+                confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, scalar: 1.2 });
+            } else {
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            }
+        }
+
+        function saveAndReturn() {
+            localStorage.setItem('interaction_preferred_anim', selectedAnim);
+            alert('特效已成功儲存！');
+            window.location.href = 'interaction.html';
+        }
+
+        // Handle Audio Context
+        window.onclick = () => {
+            const a = new Audio();
+            a.volume = 0;
+            a.play().catch(() => { });
+        };
+    </script>
+</body>
+
+</html>

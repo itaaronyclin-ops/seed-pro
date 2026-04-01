@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人員異動登錄 - TMS Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .step-container {
+            max-width: 800px;
+            margin: 40px auto;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #6c757d;
+        }
+
+        .step-item.active .step-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .step-divider {
+            width: 80px;
+            height: 2px;
+            background: #e9ecef;
+            margin: 0 20px;
+        }
+
+        .action-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            border-color: #667eea;
+        }
+
+        .action-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .bg-gradient-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .bg-gradient-warning {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container step-container">
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step-item active" id="step-ind-1">
+                <div class="step-number">1</div>
+                <span class="fw-bold">查詢人員</span>
+            </div>
+            <div class="step-divider"></div>
+            <div class="step-item" id="step-ind-2">
+                <div class="step-number">2</div>
+                <span class="fw-bold">異動資料</span>
+            </div>
+        </div>
+
+        <!-- Step 1: Search Person -->
+        <div id="step-1" class="card border-0 shadow-lg p-5" style="border-radius: 24px;">
+            <h3 class="text-center mb-4 fw-bold" style="color: #667eea;">
+                <i class="bi bi-search me-2"></i>查詢
+            </h3>
+            <p class="text-center text-muted mb-4">請輸入 AGCODE 查詢</p>
+
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="input-group input-group-lg mb-3">
+                        <span class="input-group-text bg-light border-0">
+                            <i class="bi bi-person-badge"></i>
+                        </span>
+                        <input type="text" class="form-control border-0 bg-light" id="search_agcode"
+                            placeholder="輸入 AGCODE (例: 1001)" onkeypress="if(event.key==='Enter') searchPerson()">
+                        <button class="btn btn-elegant px-4" onclick="searchPerson()">
+                            <i class="bi bi-search me-2"></i>查詢
+                        </button>
+                    </div>
+                    <div id="search-result" class="mt-4" style="display: none;">
+                        <!-- Result will be injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: New Person Form -->
+        <div id="step-2-new" class="card border-0 shadow-lg p-5" style="border-radius: 24px; display: none;">
+            <h3 class="text-center mb-4 fw-bold" style="color: #667eea;">
+                <i class="bi bi-person-plus me-2"></i>新增人員資料
+            </h3>
+            <p class="text-center text-muted mb-4">系統中尚無此人員資料，請填寫基本資訊</p>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">AGCODE <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control bg-light" id="new_agcode" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">姓名 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="new_name" placeholder="請輸入姓名">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">職級 <span class="text-danger">*</span></label>
+                    <select class="form-select" id="new_rank">
+                        <option value="NAG" selected>NAG</option>
+                        <option value="AG">AG</option>
+                        <option value="ASA">ASA</option>
+                        <option value="SAS">SAS</option>
+                        <option value="UM">UM</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">主管 AGCODE <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="new_manager_agcode" placeholder="輸入主管 AGCODE">
+                        <button class="btn btn-outline-secondary" type="button" onclick="lookupManager('new')">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">主管姓名</label>
+                    <input type="text" class="form-control bg-light" id="new_manager_name" readonly placeholder="自動帶入">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">單位 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control bg-light" id="new_group" readonly placeholder="自動帶入主管單位">
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 mt-4">
+                <button class="btn btn-light flex-fill" onclick="backToStep1()">
+                    <i class="bi bi-arrow-left me-2"></i>返回
+                </button>
+                <button class="btn btn-elegant flex-fill" onclick="submitNewPerson()">
+                    <i class="bi bi-check-lg me-2"></i>送出申請
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Existing Person - Choose Action -->
+        <div id="step-2-existing" class="card border-0 shadow-lg p-5" style="border-radius: 24px; display: none;">
+            <h3 class="text-center mb-4 fw-bold" style="color: #667eea;">
+                <i class="bi bi-person-gear me-2"></i>選擇異動類型
+            </h3>
+
+            <div class="card mb-4 border-0 bg-light">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-2" id="existing_name"></h5>
+                    <div class="row text-muted small">
+                        <div class="col-md-4">AGCODE: <span id="existing_id" class="fw-bold text-dark"></span></div>
+                        <div class="col-md-4">職級: <span id="existing_rank" class="fw-bold text-dark"></span></div>
+                        <div class="col-md-4">單位: <span id="existing_group" class="fw-bold text-dark"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="card action-card h-100 border-0 shadow-sm text-center p-4" onclick="showTransferForm()">
+                        <div class="action-icon text-primary">
+                            <i class="bi bi-arrow-left-right"></i>
+                        </div>
+                        <h5 class="fw-bold">職級/單位異動</h5>
+                        <p class="text-muted mb-0">變更職級或調整單位</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card action-card h-100 border-0 shadow-sm text-center p-4" onclick="showResignForm()">
+                        <div class="action-icon text-danger">
+                            <i class="bi bi-person-dash"></i>
+                        </div>
+                        <h5 class="fw-bold">離職</h5>
+                        <p class="text-muted mb-0">從系統中移除此人員</p>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-light w-100" onclick="backToStep1()">
+                <i class="bi bi-arrow-left me-2"></i>返回重新查詢
+            </button>
+        </div>
+
+        <!-- Step 2: Transfer Form -->
+        <div id="step-2-transfer" class="card border-0 shadow-lg p-5" style="border-radius: 24px; display: none;">
+            <h3 class="text-center mb-4 fw-bold" style="color: #667eea;">
+                <i class="bi bi-arrow-left-right me-2"></i>職級/單位異動
+            </h3>
+
+            <div class="alert alert-info border-0">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong id="transfer_name"></strong> 的異動申請
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">目前職級</label>
+                    <input type="text" class="form-control bg-light" id="transfer_old_rank" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">新職級 <span class="text-danger">*</span></label>
+                    <select class="form-select" id="transfer_new_rank" onchange="handleRankChange()">
+                        <option value="NAG">NAG</option>
+                        <option value="AG">AG</option>
+                        <option value="ASA">ASA</option>
+                        <option value="SAS">SAS</option>
+                        <option value="UM">UM</option>
+                    </select>
+                </div>
+
+                <!-- Manager fields (shown for manager ranks) -->
+                <div class="col-md-6" id="transfer_manager_section" style="display: none;">
+                    <label class="form-label fw-bold">主管 AGCODE</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="transfer_manager_agcode" placeholder="輸入主管 AGCODE">
+                        <button class="btn btn-outline-secondary" type="button" onclick="lookupManager('transfer')">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6" id="transfer_manager_name_section" style="display: none;">
+                    <label class="form-label fw-bold">主管姓名</label>
+                    <input type="text" class="form-control bg-light" id="transfer_manager_name" readonly
+                        placeholder="自動帶入">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">目前單位</label>
+                    <input type="text" class="form-control bg-light" id="transfer_old_group" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">新單位 <span class="text-danger">*</span></label>
+                    <div id="transfer_group_select_container">
+                        <select class="form-select" id="transfer_new_group_select">
+                            <option value="">請選擇單位</option>
+                        </select>
+                    </div>
+                    <div id="transfer_group_input_container" style="display: none;">
+                        <input type="text" class="form-control" id="transfer_new_group" placeholder="請輸入新單位">
+                    </div>
+                    <div id="transfer_group_readonly_container" style="display: none;">
+                        <input type="text" class="form-control bg-light" id="transfer_new_group_readonly" readonly
+                            placeholder="自動帶入主管單位">
+                    </div>
+                    <div class="form-check mt-2" id="transfer_custom_group_check" style="display: none;">
+                        <input class="form-check-input" type="checkbox" id="transfer_use_custom_group"
+                            onchange="toggleCustomGroup()">
+                        <label class="form-check-label small" for="transfer_use_custom_group">
+                            新增單位
+                        </label>
+                    </div>
+                    <div class="form-check mt-2" id="transfer_keep_group_check" style="display: none;">
+                        <input class="form-check-input" type="checkbox" id="transfer_keep_group"
+                            onchange="toggleKeepGroup()">
+                        <label class="form-check-label small" for="transfer_keep_group">
+                            單位無異動
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold">異動原因</label>
+                    <textarea class="form-control" id="transfer_reason" rows="3" placeholder="請說明異動原因（選填）"></textarea>
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 mt-4">
+                <button class="btn btn-light flex-fill" onclick="backToExistingChoice()">
+                    <i class="bi bi-arrow-left me-2"></i>返回
+                </button>
+                <button class="btn btn-elegant flex-fill" onclick="submitTransfer()">
+                    <i class="bi bi-check-lg me-2"></i>送出申請
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Resign Confirmation -->
+        <div id="step-2-resign" class="card border-0 shadow-lg p-5" style="border-radius: 24px; display: none;">
+            <h3 class="text-center mb-4 fw-bold text-danger">
+                <i class="bi bi-person-dash me-2"></i>離職申請
+            </h3>
+
+            <div class="alert alert-danger border-0">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>注意：</strong>離職後該人員的所有資料將被移除，此操作需經管理員審核。
+            </div>
+
+            <div class="card mb-4 border-0 bg-light">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-2" id="resign_name"></h5>
+                    <div class="row text-muted small">
+                        <div class="col-md-4">AGCODE: <span id="resign_id" class="fw-bold text-dark"></span></div>
+                        <div class="col-md-4">職級: <span id="resign_rank" class="fw-bold text-dark"></span></div>
+                        <div class="col-md-4">單位: <span id="resign_group" class="fw-bold text-dark"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">離職原因</label>
+                <textarea class="form-control" id="resign_reason" rows="3" placeholder="請說明離職原因（選填）"></textarea>
+            </div>
+
+            <div class="d-flex gap-3 mt-4">
+                <button class="btn btn-light flex-fill" onclick="backToExistingChoice()">
+                    <i class="bi bi-arrow-left me-2"></i>返回
+                </button>
+                <button class="btn btn-danger flex-fill" onclick="submitResign()">
+                    <i class="bi bi-check-lg me-2"></i>確認離職申請
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+        <div class="spinner-border text-light" role="status"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        /* Netlify API Shim */
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz4kiWGCG96zZHAJgc-wOAaCxOkS7WXf5IriAEKk0StXYFNVlME7x2SjaSva3Rp8obX/exec';
+        if (typeof google === 'undefined' || !google.script) {
+            window.google = { script: { run: new Proxy({ withSuccessHandler: function (f) { this._s = f; return this; }, withFailureHandler: function (f) { this._f = f; return this; } }, { get: function (t, p) { if (p in t) return t[p]; return function (...a) { fetch(API_URL, { method: 'POST', mode: 'cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: p, args: a }) }).then(r => r.json()).then(d => { if (d.error) { if (t._f) t._f(d.message || d.error) } else { if (t._s) t._s(d) } }).catch(e => { if (t._f) t._f(e.toString()) }) } } }) } }
+        };
+        let currentPerson = null;
+
+        function load(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        function searchPerson() {
+            const agcode = document.getElementById('search_agcode').value.trim();
+            if (!agcode) return alert('請輸入 AGCODE');
+
+            load(true);
+            google.script.run
+                .withSuccessHandler(result => {
+                    load(false);
+                    if (result.found) {
+                        // Person exists
+                        currentPerson = result.person;
+                        showExistingPerson();
+                    } else {
+                        // Person not found
+                        showNewPersonForm(agcode);
+                    }
+                })
+                .withFailureHandler(err => {
+                    load(false);
+                    alert('查詢失敗: ' + err);
+                })
+                .checkPersonExists(agcode);
+        }
+
+        // Manager lookup function
+        let allGroups = []; // Store all available groups
+
+        function lookupManager(context) {
+            const agcodeField = context === 'new' ? 'new_manager_agcode' : 'transfer_manager_agcode';
+            const agcode = document.getElementById(agcodeField).value.trim();
+
+            if (!agcode) return alert('請輸入主管 AGCODE');
+
+            load(true);
+            google.script.run
+                .withSuccessHandler(result => {
+                    load(false);
+                    if (result.found) {
+                        const manager = result.person;
+
+                        // Check if manager rank is valid (ASA, SAS, UM)
+                        const managerRanks = ['ASA', 'SAS', 'UM'];
+                        if (!managerRanks.includes(manager.rank)) {
+                            alert(`此人員職級為 ${manager.rank}，不是主管職級（ASA/SAS/UM）`);
+                            return;
+                        }
+
+                        if (context === 'new') {
+                            document.getElementById('new_manager_name').value = manager.name;
+                            document.getElementById('new_group').value = manager.group;
+                        } else if (context === 'transfer') {
+                            document.getElementById('transfer_manager_name').value = manager.name;
+                            // Check if AG/NAG, if so, force group
+                            const newRank = document.getElementById('transfer_new_rank').value;
+                            if (!['ASA', 'SAS', 'UM'].includes(newRank)) {
+                                document.getElementById('transfer_new_group_readonly').value = manager.group;
+                            }
+                        }
+
+                        alert(`✅ 找到主管：${manager.name} (${manager.rank})`);
+                    } else {
+                        alert('查無此 AGCODE');
+                    }
+                })
+                .withFailureHandler(err => {
+                    load(false);
+                    alert('查詢失敗: ' + err);
+                })
+                .checkPersonExists(agcode);
+        }
+
+        // Handle rank change in transfer form
+        function handleRankChange() {
+            const newRank = document.getElementById('transfer_new_rank').value;
+            const managerRanks = ['ASA', 'SAS', 'UM'];
+            const isManagerRank = managerRanks.includes(newRank);
+
+            // 1. Manager Lookup: AG/NAG MUST have a manager. Managers MAY have one.
+            // Based on user request "主管職降AG、NAG 未顯示查詢主管欄位", we should show it for them.
+            // We will show it for everyone to be safe, or specifically for AG/NAG.
+            document.getElementById('transfer_manager_section').style.display = 'block';
+            document.getElementById('transfer_manager_name_section').style.display = 'block';
+
+            // 2. Unit Selection Logic:
+            if (!isManagerRank) {
+                // For AG/NAG: Force group to match manager, hide custom options
+                document.getElementById('transfer_group_select_container').style.display = 'none';
+                document.getElementById('transfer_group_input_container').style.display = 'none';
+                document.getElementById('transfer_group_readonly_container').style.display = 'block';
+                document.getElementById('transfer_custom_group_check').style.display = 'none';
+                document.getElementById('transfer_keep_group_check').style.display = 'none';
+            } else {
+                // For ASA/SAS/UM: Can choose their own group
+                document.getElementById('transfer_group_select_container').style.display = 'block';
+                document.getElementById('transfer_group_input_container').style.display = 'none';
+                document.getElementById('transfer_group_readonly_container').style.display = 'none';
+                document.getElementById('transfer_custom_group_check').style.display = 'block';
+                document.getElementById('transfer_keep_group_check').style.display = 'block';
+
+                // Reset checkboxes
+                document.getElementById('transfer_use_custom_group').checked = false;
+                document.getElementById('transfer_keep_group').checked = false;
+
+                if (allGroups.length === 0) {
+                    loadAllGroups();
+                }
+            }
+        }
+
+        // Load all available groups from system
+        function loadAllGroups() {
+            load(true);
+            google.script.run
+                .withSuccessHandler(data => {
+                    load(false);
+                    if (data && data.people) {
+                        const groups = [...new Set(data.people.map(p => p.group).filter(Boolean))].sort();
+                        allGroups = groups;
+                        const select = document.getElementById('transfer_new_group_select');
+                        select.innerHTML = '<option value="">請選擇單位</option>' +
+                            groups.map(g => `<option value="${g}">${g}</option>`).join('');
+                    }
+                })
+                .withFailureHandler(err => {
+                    load(false);
+                    console.error('Failed to load groups:', err);
+                })
+                .getReportData(); // Correct API call
+        }
+
+        // Toggle custom group input
+        function toggleCustomGroup() {
+            const useCustom = document.getElementById('transfer_use_custom_group').checked;
+
+            if (useCustom) {
+                // Uncheck keep group
+                document.getElementById('transfer_keep_group').checked = false;
+                document.getElementById('transfer_group_select_container').style.display = 'none';
+                document.getElementById('transfer_group_input_container').style.display = 'block';
+            } else {
+                document.getElementById('transfer_group_select_container').style.display = 'block';
+                document.getElementById('transfer_group_input_container').style.display = 'none';
+            }
+        }
+
+        // Toggle keep current group
+        function toggleKeepGroup() {
+            const keepGroup = document.getElementById('transfer_keep_group').checked;
+
+            if (keepGroup) {
+                // Uncheck custom group
+                document.getElementById('transfer_use_custom_group').checked = false;
+                document.getElementById('transfer_group_select_container').style.display = 'none';
+                document.getElementById('transfer_group_input_container').style.display = 'none';
+            } else {
+                document.getElementById('transfer_group_select_container').style.display = 'block';
+                document.getElementById('transfer_group_input_container').style.display = 'none';
+            }
+        }
+
+        function showNewPersonForm(agcode) {
+            document.getElementById('step-1').style.display = 'none';
+            document.getElementById('step-2-new').style.display = 'block';
+            document.getElementById('new_agcode').value = agcode;
+
+            // Update step indicator
+            document.getElementById('step-ind-1').classList.remove('active');
+            document.getElementById('step-ind-2').classList.add('active');
+        }
+
+        function showExistingPerson() {
+            document.getElementById('step-1').style.display = 'none';
+            document.getElementById('step-2-existing').style.display = 'block';
+
+            document.getElementById('existing_name').innerText = currentPerson.name;
+            document.getElementById('existing_id').innerText = currentPerson.id;
+            document.getElementById('existing_rank').innerText = currentPerson.rank;
+            document.getElementById('existing_group').innerText = currentPerson.group;
+
+            // Update step indicator
+            document.getElementById('step-ind-1').classList.remove('active');
+            document.getElementById('step-ind-2').classList.add('active');
+        }
+
+        function showTransferForm() {
+            document.getElementById('step-2-existing').style.display = 'none';
+            document.getElementById('step-2-transfer').style.display = 'block';
+
+            document.getElementById('transfer_name').innerText = currentPerson.name;
+            document.getElementById('transfer_old_rank').value = currentPerson.rank;
+            document.getElementById('transfer_old_group').value = currentPerson.group;
+            document.getElementById('transfer_new_rank').value = currentPerson.rank;
+
+            // Reset all group selection options
+            document.getElementById('transfer_use_custom_group').checked = false;
+            document.getElementById('transfer_keep_group').checked = false;
+            document.getElementById('transfer_group_select_container').style.display = 'block';
+            document.getElementById('transfer_group_input_container').style.display = 'none';
+
+            // Trigger rank change to show/hide manager fields and load groups
+            handleRankChange();
+        }
+
+        function showResignForm() {
+            document.getElementById('step-2-existing').style.display = 'none';
+            document.getElementById('step-2-resign').style.display = 'block';
+
+            document.getElementById('resign_name').innerText = currentPerson.name;
+            document.getElementById('resign_id').innerText = currentPerson.id;
+            document.getElementById('resign_rank').innerText = currentPerson.rank;
+            document.getElementById('resign_group').innerText = currentPerson.group;
+        }
+
+        function backToStep1() {
+            document.getElementById('step-2-new').style.display = 'none';
+            document.getElementById('step-2-existing').style.display = 'none';
+            document.getElementById('step-1').style.display = 'block';
+            document.getElementById('search_agcode').value = '';
+
+            // Update step indicator
+            document.getElementById('step-ind-2').classList.remove('active');
+            document.getElementById('step-ind-1').classList.add('active');
+        }
+
+        function backToExistingChoice() {
+            document.getElementById('step-2-transfer').style.display = 'none';
+            document.getElementById('step-2-resign').style.display = 'none';
+            document.getElementById('step-2-existing').style.display = 'block';
+        }
+
+        function submitNewPerson() {
+            const managerAgcode = document.getElementById('new_manager_agcode').value.trim();
+            const managerName = document.getElementById('new_manager_name').value.trim();
+
+            const data = {
+                agcode: document.getElementById('new_agcode').value,
+                name: document.getElementById('new_name').value.trim(),
+                rank: document.getElementById('new_rank').value,
+                group: document.getElementById('new_group').value.trim(),
+                manager: managerName,
+                type: 'new'
+            };
+
+            if (!data.name) {
+                return alert('請輸入姓名');
+            }
+            if (!managerAgcode || !managerName) {
+                return alert('請查詢並選擇主管');
+            }
+            if (!data.group) {
+                return alert('單位尚未自動帶入，請先查詢主管');
+            }
+
+            if (!confirm(`確定要送出新增申請嗎？\n\nAGCODE: ${data.agcode}\n姓名: ${data.name}\n職級: ${data.rank}\n單位: ${data.group}\n主管: ${data.manager}`)) {
+                return;
+            }
+
+            load(true);
+            google.script.run
+                .withSuccessHandler(() => {
+                    load(false);
+                    alert('✅ 新增申請已送出！\n請等待管理員審核。');
+                    window.close();
+                })
+                .withFailureHandler(err => {
+                    load(false);
+                    alert('送出失敗: ' + err);
+                })
+                .submitPersonnelChange(data);
+        }
+
+        function submitTransfer() {
+            const newRank = document.getElementById('transfer_new_rank').value;
+            const oldGroup = document.getElementById('transfer_old_group').value;
+            const managerRanks = ['ASA', 'SAS', 'UM'];
+            const isManagerRank = managerRanks.includes(newRank);
+
+            // Get new group value
+            let newGroup;
+            if (!isManagerRank) {
+                // Must come from manager
+                newGroup = document.getElementById('transfer_new_group_readonly').value;
+                if (!newGroup) return alert('請先查詢主管以帶入新單位');
+            } else {
+                const keepGroup = document.getElementById('transfer_keep_group').checked;
+                const useCustom = document.getElementById('transfer_use_custom_group').checked;
+
+                if (keepGroup) {
+                    newGroup = oldGroup;
+                } else if (useCustom) {
+                    newGroup = document.getElementById('transfer_new_group').value.trim();
+                } else {
+                    newGroup = document.getElementById('transfer_new_group_select').value;
+                }
+            }
+
+            const data = {
+                agcode: currentPerson.id,
+                name: currentPerson.name,
+                oldRank: document.getElementById('transfer_old_rank').value,
+                newRank: newRank,
+                oldGroup: oldGroup,
+                newGroup: newGroup,
+                reason: document.getElementById('transfer_reason').value.trim(),
+                type: 'transfer'
+            };
+
+            if (!data.newGroup) {
+                return alert('請選擇或輸入新單位');
+            }
+
+            if (data.newRank === data.oldRank && data.newGroup === data.oldGroup) {
+                return alert('職級和單位都沒有變更');
+            }
+
+            if (!confirm(`確定要送出異動申請嗎？\n\n${data.name} (${data.agcode})\n職級: ${data.oldRank} → ${data.newRank}\n單位: ${data.oldGroup} → ${data.newGroup}`)) {
+                return;
+            }
+
+            load(true);
+            google.script.run
+                .withSuccessHandler(() => {
+                    load(false);
+                    alert('✅ 異動申請已送出！\n請等待管理員審核。');
+                    window.close();
+                })
+                .withFailureHandler(err => {
+                    load(false);
+                    alert('送出失敗: ' + err);
+                })
+                .submitPersonnelChange(data);
+        }
+
+        function submitResign() {
+            const data = {
+                id: currentPerson.id,
+                name: currentPerson.name,
+                rank: currentPerson.rank,
+                group: currentPerson.group,
+                reason: document.getElementById('resign_reason').value.trim(),
+                type: 'resign'
+            };
+
+            if (!confirm(`⚠️ 確定要送出離職申請嗎？\n\n${data.name} (${data.id})\n職級: ${data.rank}\n單位: ${data.group}\n\n此操作將移除該人員的所有資料。`)) {
+                return;
+            }
+
+            load(true);
+            google.script.run
+                .withSuccessHandler(() => {
+                    load(false);
+                    alert('✅ 離職申請已送出！\n請等待系統放行。');
+                    window.close();
+                })
+                .withFailureHandler(err => {
+                    load(false);
+                    alert('送出失敗: ' + err);
+                })
+                .submitPersonnelChange(data);
+        }
+    </script>
+</body>
+
+</html>

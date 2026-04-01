@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <title>歷程查詢</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        /* === Modern Elegant White Theme === */
+        body {
+            background-color: #ffffff;
+            color: #2d3436;
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container-custom {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .card-clean {
+            background: #ffffff;
+            border: 1px solid #f0f0f0;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+            padding: 40px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .search-title {
+            font-weight: 300;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: #000;
+            letter-spacing: 1px;
+        }
+
+        .search-subtitle {
+            color: #b2bec3;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        .input-minimal {
+            border: none;
+            border-bottom: 2px solid #dfe6e9;
+            border-radius: 0;
+            padding: 15px 10px;
+            font-size: 1.2rem;
+            width: 100%;
+            text-align: center;
+            background: transparent;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-minimal:focus {
+            border-bottom-color: #2d3436;
+        }
+
+        .btn-elegant {
+            background-color: #2d3436;
+            color: #fff;
+            border-radius: 30px;
+            padding: 10px 30px;
+            border: none;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-top: 20px;
+        }
+
+        .btn-elegant:hover {
+            background-color: #000;
+        }
+
+        .profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .profile-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3436;
+        }
+
+        .profile-meta {
+            color: #636e72;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table th {
+            border-top: none;
+            border-bottom: 1px solid #2d3436;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #636e72;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 15px 10px;
+        }
+
+        .table td {
+            border-bottom: 1px solid #f5f5f5;
+            padding: 15px 10px;
+            font-size: 0.95rem;
+            vertical-align: middle;
+        }
+
+        .status-dot {
+            height: 8px;
+            width: 8px;
+            background-color: #00b894;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loading">
+        <div class="spinner-border text-dark" style="width: 2rem; height: 2rem;"></div>
+        <div class="mt-3 text-secondary" style="font-size: 0.8rem; letter-spacing: 2px;">SEARCHING</div>
+    </div>
+
+    <div class="container-custom">
+
+        <div class="card-clean text-center" id="searchArea">
+            <h1 class="search-title">History Query</h1>
+            <p class="search-subtitle">個人學習歷程查詢</p>
+
+            <div style="max-width: 400px; margin: 0 auto;">
+                <input type="text" class="input-minimal" id="keyword" placeholder="Enter ID or Name"
+                    onkeypress="if(event.key==='Enter') doSearch()">
+                <button class="btn btn-elegant" onclick="doSearch()">查詢 / Search</button>
+            </div>
+        </div>
+
+        <div id="resultArea" style="display:none;" class="card-clean">
+
+            <div class="profile-header">
+                <div>
+                    <div class="profile-name" id="pName"></div>
+                    <div class="profile-meta" id="pInfo"></div>
+                </div>
+                <div class="text-end">
+                    <button class="btn btn-outline-dark btn-sm rounded-pill px-3 mb-2" onclick="downloadPDF()">Download
+                        PDF</button>
+                    <div><button class="btn btn-link btn-sm text-muted p-0" onclick="resetSearch()">重新查詢</button></div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Course Name</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Method</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        /* Netlify API Shim */
+        const API_URL = "https://script.google.com/macros/s/AKfycbz4kiWGCG96zZHAJgc-wOAaCxOkS7WXf5IriAEKk0StXYFNVlME7x2SjaSva3Rp8obX/exec";
+        if (typeof google === 'undefined' || !google.script) {
+            window.google = { script: { run: new Proxy({ withSuccessHandler: function (f) { this._s = f; return this; }, withFailureHandler: function (f) { this._f = f; return this; } }, { get: function (t, p) { if (p in t) return t[p]; return function (...a) { fetch(API_URL, { method: 'POST', mode: 'cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: p, args: a }) }).then(r => r.json()).then(d => { if (d.error) { if (t._f) t._f(d.message || d.error) } else { if (t._s) t._s(d) } }).catch(e => { if (t._f) t._f(e.toString()) }) } } }) } }
+        };
+        let currentPerson = null;
+
+        function load(show) { document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
+        function resetSearch() {
+            document.getElementById('searchArea').style.display = 'block';
+            document.getElementById('resultArea').style.display = 'none';
+            document.getElementById('keyword').value = '';
+            document.getElementById('keyword').focus();
+        }
+
+        function doSearch() {
+            const key = document.getElementById('keyword').value.trim();
+            if (!key) return alert('請輸入內容');
+
+            load(true);
+            google.script.run.withSuccessHandler(res => {
+                load(false);
+                if (!res.found) return alert('❌ 查無此人 人員異動請洽教委');
+
+                currentPerson = res.person;
+
+                // Render Header
+                document.getElementById('pName').innerText = res.person.name;
+                document.getElementById('pInfo').innerText = `${res.person.id}  /  ${res.person.group}  /  ${res.person.rank}`;
+
+                // Render Table (Filter: Done ONLY)
+                const doneList = res.history.filter(h => h.statusRaw === 'done');
+                const tbody = document.getElementById('resultBody');
+
+                if (doneList.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">尚無已完成的訓練紀錄</td></tr>';
+                } else {
+                    tbody.innerHTML = doneList.map(h => `
+            <tr>
+              <td>${h.code}</td>
+              <td class="fw-bold">${h.name}</td>
+              <td>${h.pName}</td>
+              <td>${h.date}</td>
+              <td>${h.method}</td>
+            </tr>
+          `).join('');
+                }
+
+                // Switch View
+                document.getElementById('searchArea').style.display = 'none';
+                document.getElementById('resultArea').style.display = 'block';
+
+            }).getPersonHistory(key);
+        }
+
+        function downloadPDF() {
+            if (!currentPerson) return;
+            load(true);
+            google.script.run.withSuccessHandler(res => {
+                load(false);
+                let link = document.createElement('a');
+                link.href = "data:application/pdf;base64," + res.base64;
+                link.download = res.filename;
+                link.click();
+            }).generatePDF({ type: 'individual', id: currentPerson.id });
+        }
+    </script>
+</body>
+
+</html>

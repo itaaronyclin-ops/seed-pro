@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>即時紀錄 | Seed Pro+</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        /* === Premium Elegant White Style (Aligned with Index) === */
+        :root {
+            --primary-dark: #2d3436;
+            --primary-bg: #fcfcfc;
+            --text-main: #2d3436;
+            --text-muted: #636e72;
+            --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+            --accent-green: #00b894;
+            --accent-red: #e17055;
+            --border-color: #f0f0f0;
+            --glass-white: rgba(255, 255, 255, 0.85);
+        }
+
+        body {
+            background-color: var(--primary-bg);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(0, 184, 148, 0.03) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(9, 132, 227, 0.03) 0px, transparent 50%);
+            color: var(--text-main);
+            font-family: "Inter", "Segoe UI", "Microsoft JhengHei", sans-serif;
+            min-height: 100vh;
+        }
+
+        .glass-header {
+            background: var(--glass-white);
+            backdrop-filter: blur(15px);
+            border-bottom: 2px solid var(--border-color);
+            padding: 1.5rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .centered-clock {
+            text-align: center;
+        }
+
+        #liveClock {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+
+        #liveDate {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+
+        .glass-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .stat-card {
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-value {
+            font-size: 3.8rem;
+            font-weight: 950;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #636e72 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Arrival Animations */
+        #entry-container {
+            position: fixed;
+            top: 120px;
+            left: 20px;
+            z-index: 1100;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Support for 10 types of entry animations */
+        @keyframes anim-classic {
+            0% {
+                transform: translateX(-150%) scale(0.9);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-bottom {
+            0% {
+                transform: translateY(150%) scale(0.9);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-pop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            80% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-flip {
+            0% {
+                transform: rotateX(90deg);
+                opacity: 0;
+            }
+
+            100% {
+                transform: rotateX(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-blur {
+            0% {
+                filter: blur(20px);
+                opacity: 0;
+                transform: scale(1.2);
+            }
+
+            100% {
+                filter: blur(0);
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes anim-roll {
+            0% {
+                transform: translateX(-100%) rotate(-180deg);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateX(0) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-top {
+            0% {
+                transform: translateY(-150%);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 184, 148, 0.4);
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            100% {
+                box-shadow: 0 0 0 30px rgba(0, 184, 148, 0);
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-zoom {
+            0% {
+                clip-path: circle(0% at 50% 50%);
+                opacity: 0;
+            }
+
+            100% {
+                clip-path: circle(100% at 50% 50%);
+                opacity: 1;
+            }
+        }
+
+        @keyframes anim-bounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-30px);
+            }
+
+            60% {
+                transform: translateY(-15px);
+            }
+        }
+
+        .entry-banner {
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 12px 20px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.1);
+            min-width: 280px;
+            /* Animation set dynamically by JS */
+        }
+
+        .entry-avatar {
+            width: 48px;
+            height: 48px;
+            background: var(--primary-dark);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .entry-name {
+            font-weight: 950;
+            font-size: 1.15rem;
+            color: var(--primary-dark);
+        }
+
+        .entry-action {
+            color: var(--accent-green);
+            font-weight: 800;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        /* Table Premium Styles */
+        .premium-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .premium-table th {
+            background: #f8f9fa;
+            color: var(--text-muted);
+            padding: 15px 20px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .premium-table td {
+            padding: 20px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        .agcode-tag {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Modern Floating Settings Sidebar */
+        .settings-sidebar {
+            position: fixed;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%) translateX(100%);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-top-left-radius: 30px;
+            border-bottom-left-radius: 30px;
+            padding: 30px 20px;
+            z-index: 2000;
+            box-shadow: -20px 0 60px rgba(0, 0, 0, 0.08);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 200px;
+        }
+
+        .settings-sidebar.active {
+            transform: translateY(-50%) translateX(0);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            right: 20px;
+            bottom: 30px;
+            width: 55px;
+            height: 55px;
+            background: var(--primary-dark);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 2001;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .sidebar-toggle:hover {
+            transform: scale(1.1) rotate(45deg);
+        }
+
+        .sidebar-btn {
+            background: transparent;
+            border: 1px solid #eee;
+            padding: 12px;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .sidebar-btn:hover {
+            background: #f8f9fa;
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+            transform: translateY(-2px);
+        }
+
+        .sidebar-title {
+            font-size: 0.65rem;
+            color: #b2bec3;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .new-row-premium {
+            animation: elegant-row-in 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes elegant-row-in {
+            0% {
+                transform: scale(0.98);
+                opacity: 0;
+                background: rgba(0, 184, 148, 0.05);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+                background: transparent;
+            }
+        }
+
+        .dot-pulse {
+            width: 12px;
+            height: 12px;
+            background-color: var(--accent-red);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 12px;
+            animation: pulse-animation 2.5s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(225, 112, 85, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(225, 112, 85, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(225, 112, 85, 0);
+            }
+        }
+
+        .scroll-container {
+            max-height: 600px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s;
+        }
+
+        /* QR Code Bottom Left - Premium Expandable */
+        .qr-corner {
+            position: fixed;
+            bottom: 30px;
+            left: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+            text-align: center;
+            z-index: 1000;
+            border: 1px solid var(--border-color);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            width: 150px;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .qr-corner.expanded {
+            width: 280px;
+            padding: 25px;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2100;
+        }
+
+        .qr-corner #qrcode img {
+            width: 120px !important;
+            height: 120px !important;
+            margin: 0 auto 12px;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .qr-corner.expanded #qrcode img {
+            width: 230px !important;
+            height: 230px !important;
+        }
+
+        .qr-toggle-icon {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 0.8rem;
+            color: #b2bec3;
+            transition: transform 0.3s;
+        }
+
+        .qr-corner.expanded .qr-toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .qr-corner .qr-text {
+            font-weight: 800;
+            color: var(--primary-dark);
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            margin-top: 5px;
+            white-space: nowrap;
+        }
+
+        .qr-corner.qr-hidden {
+            display: none !important;
+        }
+
+        /* Entry Sound Control */
+        .sound-toggle {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            z-index: 1000;
+            background: white;
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .setting-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 170px;
+            z-index: 1000;
+            background: white;
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            text-decoration: none;
+            color: var(--primary-dark);
+        }
+
+        .sound-toggle:hover,
+        .setting-btn:hover {
+            transform: scale(1.05);
+            background: #fcfcfc;
+        }
+
+        .sound-toggle:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loadingOverlay">
+        <div class="text-center">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+            <p class="mt-4 text-dim fw-bold">INITIATING MONITORING COMMAND...</p>
+        </div>
+    </div>
+
+    <!-- Entry Animation Container -->
+    <div id="entry-container"></div>
+
+    <!-- Sidebar Toggle (Moved up to avoid QR overlap) -->
+    <div class="sidebar-toggle" onclick="toggleSidebar()" id="sidebarToggle" style="bottom: 110px;">
+        <i class="bi bi-gear-fill"></i>
+    </div>
+
+    <!-- Floating Settings Sidebar -->
+    <div class="settings-sidebar" id="settingsSidebar">
+        <div class="sidebar-title">Management</div>
+
+        <div class="mb-3 px-2">
+            <label class="sidebar-title" style="letter-spacing: 0; margin-bottom: 5px; display: block;">Switch
+                Event</label>
+            <select id="eventSelector" class="form-select form-select-sm rounded-3 fw-bold" onchange="changeEvent()">
+                <option value="">選擇活動...</option>
+            </select>
+        </div>
+
+        <div class="sidebar-title">Controls</div>
+
+        <button class="sidebar-btn" onclick="toggleSound()">
+            <i id="soundIcon" class="bi bi-volume-up-fill fs-5 text-primary"></i>
+            <span id="soundText" style="font-size: 0.7rem;">Sound ON</span>
+        </button>
+
+        <button class="sidebar-btn" onclick="testAnimation()">
+            <i class="bi bi-magic fs-5 text-success"></i>
+            <span style="font-size: 0.7rem;">預覽特效</span>
+        </button>
+
+        <a href="./interaction.html" target="_blank" class="sidebar-btn">
+            <i class="bi bi-controller fs-5 text-purple" style="color: #6c5ce7;"></i>
+            <span style="font-size: 0.7rem;">互動工具</span>
+        </a>
+
+        <button class="sidebar-btn" onclick="toggleQRVisibility()">
+            <i id="qrVisIcon" class="bi bi-qr-code fs-5 text-dark"></i>
+            <span id="qrVisText" style="font-size: 0.7rem;">隱藏 QR</span>
+        </button>
+
+        <a href="./sound-picker.html" class="sidebar-btn">
+            <i class="bi bi-palette-fill fs-5 text-info"></i>
+            <span style="font-size: 0.7rem;">風格設定</span>
+        </a>
+    </div>
+
+    <header class="glass-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-4">
+                    <div class="d-flex align-items-center">
+                        <div class="dot-pulse"></div>
+                        <div>
+                            <h4 class="fw-800 mb-0">即時紀錄</h4>
+                            <p class="text-muted small mb-0 fw-bold" id="currentEventTitle">Seed Pro+</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4 centered-clock">
+                    <div id="liveClock">00:00:00</div>
+                    <div id="liveDate">2026.03.02 MONDAY</div>
+                </div>
+                <div class="col-4 d-flex justify-content-end align-items-center">
+                    <div class="text-end" style="white-space: nowrap;">
+                        <div class="small text-muted fw-bold"
+                            style="font-size: 0.65rem; letter-spacing: 1.5px; line-height: 1;">LAST UPDATE</div>
+                        <div class="fw-900 text-primary" id="lastUpdateTime"
+                            style="font-size: 1.15rem; line-height: 1.2;">--:--:--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- QR Code Corner - Premium Expandable -->
+    <div class="qr-corner" id="qrContainer" style="display: none;" onclick="toggleQR()">
+        <i class="bi bi-arrows-angle-expand qr-toggle-icon"></i>
+        <div id="qrcode"></div>
+        <div class="qr-text">SCAN TO JOIN</div>
+    </div>
+
+    <main class="container py-5">
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="glass-card stat-card text-primary">
+                    <div class="stat-value" id="statTotal">0</div>
+                    <div class="stat-label">應到 (Expected)</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card stat-card text-success">
+                    <div class="stat-value" id="statCheckedIn" style="color: #00b894;">0</div>
+                    <div class="stat-label">實到 (Present)</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card stat-card text-danger">
+                    <div class="stat-value" id="statMissing" style="color: #e17055;">0</div>
+                    <div class="stat-label">缺席 (Missing)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-5">
+            <div class="col-lg-6">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0 text-success"><i class="bi bi-people-fill me-2"></i>已簽到名單</h5>
+                    <span class="badge rounded-pill bg-success px-3 py-2">LIVE DATA</span>
+                </div>
+                <div class="glass-card p-4 scroll-container">
+                    <table class="premium-table">
+                        <thead>
+                            <tr>
+                                <th>AGCODE</th>
+                                <th>姓名</th>
+                                <th>單位</th>
+                                <th class="text-end">簽到時間</th>
+                            </tr>
+                        </thead>
+                        <tbody id="checkedInBody">
+                            <tr>
+                                <td colspan="4" class="text-center text-dim p-5">COMMAND WAITING...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="d-flex justify-content-between align-items-center mb-4 text-danger">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-person-x-fill me-2"></i>未簽到名單</h5>
+                    <span class="badge rounded-pill bg-danger px-3 py-2">URGENT</span>
+                </div>
+                <div class="glass-card p-4 scroll-container">
+                    <table class="premium-table">
+                        <thead>
+                            <tr>
+                                <th>AGCODE</th>
+                                <th>姓名</th>
+                                <th>單位</th>
+                                <th class="text-end">狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody id="missingBody">
+                            <tr>
+                                <td colspan="4" class="text-center text-dim p-5">COMMAND WAITING...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz4kiWGCG96zZHAJgc-wOAaCxOkS7WXf5IriAEKk0StXYFNVlME7x2SjaSva3Rp8obX/exec';
+        let currentEventId = '';
+        let monitorInterval = null;
+        let lastCheckedInCodes = new Set();
+        let qrcodeInstance = null;
+        let soundEnabled = true;
+        let isInitialLoad = true;
+
+        // Sound Effects (Refined Doorbell Chime)
+        const SOUND_URL = './assets/bell.mp3';
+        let checkinSound = new Audio(SOUND_URL);
+        checkinSound.load();
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('settingsSidebar');
+            if (sidebar) sidebar.classList.toggle('active');
+            const icon = document.querySelector('#sidebarToggle i');
+            if (icon && sidebar) {
+                icon.className = sidebar.classList.contains('active') ? 'bi bi-x-lg' : 'bi bi-gear-fill';
+            }
+        }
+
+        function toggleQR() {
+            const qr = document.getElementById('qrContainer');
+            if (qr && !qr.classList.contains('qr-hidden')) {
+                qr.classList.toggle('expanded');
+                const icon = qr.querySelector('.qr-toggle-icon');
+                if (icon) {
+                    icon.className = qr.classList.contains('expanded') ? 'bi bi-arrows-angle-contract qr-toggle-icon' : 'bi bi-arrows-angle-expand qr-toggle-icon';
+                }
+            }
+        }
+
+        function toggleQRVisibility() {
+            const qr = document.getElementById('qrContainer');
+            if (!qr) return;
+
+            const isHidden = qr.classList.toggle('qr-hidden');
+            const icon = document.getElementById('qrVisIcon');
+            const text = document.getElementById('qrVisText');
+
+            if (icon) icon.className = isHidden ? 'bi bi-qr-code-scan fs-5 text-muted' : 'bi bi-qr-code fs-5 text-dark';
+            if (text) text.textContent = isHidden ? '顯示 QR' : '隱藏 QR';
+
+            showToast(isHidden ? '🙈 QR Code 已隱藏' : '👁️ QR Code 已顯示', 'info');
+        }
+
+        function maskAgcode(code) {
+            if (!code) return '';
+            const str = String(code);
+            if (str.length <= 4) return str[0] + '****' + str.slice(-1);
+            return str.substring(0, 2) + '****' + str.substring(str.length - 2);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+
+            if (soundEnabled) {
+                const s = new Audio(SOUND_URL);
+                s.volume = 0;
+                s.play().catch(e => console.log('Unlock failed:', e));
+            }
+
+            const icon = document.getElementById('soundIcon');
+            const text = document.getElementById('soundText');
+            if (icon) icon.className = soundEnabled ? 'bi bi-volume-up-fill fs-4 text-primary' : 'bi bi-volume-mute-fill fs-4 text-muted';
+            if (text) text.textContent = soundEnabled ? 'Sound ON' : 'Sound OFF';
+            showToast(soundEnabled ? '🔔 音效已開啟' : '🔕 音效已關閉', 'info');
+        }
+
+        // Unlock Audio Context on first click (Browser Policy)
+        window.addEventListener('click', function unlockAudio() {
+            const s = new Audio(SOUND_URL);
+            s.volume = 0;
+            s.play().then(() => {
+                console.log('Audio Unlocked via Gesture');
+                window.removeEventListener('click', unlockAudio);
+            }).catch(e => console.log('Unlock failed:', e));
+        }, { once: true });
+
+        const gas = {
+            run: function (cbName) {
+                const self = this;
+                return {
+                    getTrainingEvents: () => self.call('getTrainingEvents', [true], cbName),
+                    getLiveAttendance: (id) => self.call('getLiveAttendance', [id], cbName)
+                }
+            },
+            call: function (action, args, cbName) {
+                fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: action, args: args })
+                })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (window[cbName]) window[cbName](res);
+                    })
+                    .catch(err => {
+                        console.error("API Error:", err);
+                    });
+            }
+        };
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('liveClock').textContent = now.toLocaleTimeString('en-GB', { hour12: false });
+            document.getElementById('liveDate').textContent = now.toLocaleDateString('en-US', {
+                year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'long'
+            }).toUpperCase();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        window.onload = () => {
+            window.handleInit = (res) => {
+                const s = document.getElementById('eventSelector');
+                if (res.success && res.events) {
+                    res.events.forEach(ev => {
+                        const opt = document.createElement('option');
+                        opt.value = ev.id; opt.textContent = ev.title; s.appendChild(opt);
+                    });
+                }
+                document.getElementById('loadingOverlay').style.opacity = '0';
+                setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 500);
+            };
+            gas.run('handleInit').getTrainingEvents();
+        };
+
+        function changeEvent() {
+            currentEventId = document.getElementById('eventSelector').value;
+            const qrContainer = document.getElementById('qrContainer');
+
+            if (currentEventId) {
+                document.getElementById('currentEventTitle').textContent = document.getElementById('eventSelector').selectedOptions[0].text;
+
+                // Update QR Code
+                const checkInUrl = `https://seed-pro.vercel.app/checkin.html?id=${currentEventId}`;
+                qrContainer.style.display = 'block';
+                document.getElementById('qrcode').innerHTML = "";
+                new QRCode(document.getElementById("qrcode"), {
+                    text: checkInUrl,
+                    width: 120,
+                    height: 120
+                });
+
+                lastCheckedInCodes = new Set();
+                isInitialLoad = true; // Reset for new event
+                refreshData();
+                if (monitorInterval) clearInterval(monitorInterval);
+                monitorInterval = setInterval(refreshData, 5000);
+            } else {
+                if (monitorInterval) clearInterval(monitorInterval);
+                qrContainer.style.display = 'none';
+                resetUI();
+            }
+        }
+
+        function playSound() {
+            if (!soundEnabled) return;
+            const preferredSound = localStorage.getItem('monitor_preferred_sound') || SOUND_URL;
+            const s = new Audio(preferredSound);
+            s.volume = 0.8;
+            s.play().catch(e => {
+                console.error('Audio Playback Error:', e);
+            });
+        }
+
+        function triggerEntryAnimation(person) {
+            const container = document.getElementById('entry-container');
+            const banner = document.createElement('div');
+            banner.className = 'entry-banner';
+
+            // Apply preferred animation
+            const preferredAnim = localStorage.getItem('monitor_preferred_anim') || 'anim-classic';
+            banner.style.animation = `${preferredAnim} 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
+
+            banner.innerHTML = `
+                <div class="entry-avatar"><i class="bi bi-person-check"></i></div>
+                <div class="entry-info">
+                    <div class="entry-action">ACCESS GRANTED</div>
+                    <div class="entry-name">${person.name || '測試人員'}</div>
+                </div>
+            `;
+            container.appendChild(banner);
+
+            // Elegant Subtle Confetti
+            if (soundEnabled) {
+                confetti({
+                    particleCount: 80,
+                    spread: 60,
+                    origin: { y: 0.6, x: 0.1 },
+                    colors: ['#2d3436', '#00b894', '#0984e3'],
+                    gravity: 1.2
+                });
+
+                playSound();
+            }
+
+            // Elegant Removal
+            setTimeout(() => {
+                banner.style.transition = 'all 1s cubic-bezier(0.16, 1, 0.3, 1)';
+                banner.style.opacity = '0';
+                setTimeout(() => banner.remove(), 1000);
+            }, 5500);
+        }
+
+        function testAnimation() {
+            playSound();
+            triggerEntryAnimation({
+                name: '預覽人員',
+                agcode: 'TEST001'
+            });
+            showToast('已發送測試特效', 'success');
+        }
+
+        function showToast(msg, type = 'info') {
+            // Simple alert if toast container not exists, but let's just console log for now
+            console.log(`[${type}] ${msg}`);
+        }
+
+        function refreshData() {
+            if (!currentEventId) return;
+            window.handleData = (res) => {
+                if (res.success) {
+                    // Update Stats
+                    const sT = document.getElementById('statTotal');
+                    const sC = document.getElementById('statCheckedIn');
+                    const sM = document.getElementById('statMissing');
+
+                    sT.textContent = res.stats.total;
+                    sC.textContent = res.stats.checkedIn;
+                    sM.textContent = res.stats.missing;
+
+                    // Header Update
+                    document.getElementById('lastUpdateTime').textContent = new Date().toLocaleTimeString();
+
+                    // Process Checked-in List
+                    let hasNewEntry = false;
+                    const newCheckins = res.checkedInList.map(p => {
+                        const isNew = !lastCheckedInCodes.has(p.agcode) && !isInitialLoad;
+                        if (isNew) {
+                            hasNewEntry = true;
+                            triggerEntryAnimation(p);
+                        }
+                        return `
+                            <tr class="${isNew ? 'new-row-premium' : ''}">
+                                <td><span class="agcode-tag">${maskAgcode(p.agcode)}</span></td>
+                                <td class="fw-800">${p.name}</td>
+                                <td class="small text-muted fw-bold">${p.dept || 'N/A'}</td>
+                                <td class="text-end text-success fw-800 font-monospace">${p.time}</td>
+                            </tr>
+                        `;
+                    });
+
+                    document.getElementById('checkedInBody').innerHTML = res.checkedInList.length ? newCheckins.reverse().join('') : '<tr><td colspan="4" class="text-center text-muted p-5 small">今日尚待簽到中...</td></tr>';
+
+                    // Update local cache of codes
+                    lastCheckedInCodes = new Set(res.checkedInList.map(p => p.agcode));
+                    isInitialLoad = false; // Initial load complete
+
+                    // Missing List
+                    document.getElementById('missingBody').innerHTML = res.missingList.length ? res.missingList.map(p => `
+                        <tr>
+                            <td><span class="agcode-tag">${maskAgcode(p.agcode)}</span></td>
+                            <td class="fw-800 text-muted">${p.name}</td>
+                            <td class="small text-muted">${p.dept || 'N/A'}</td>
+                            <td class="text-end"><span class="badge bg-light text-muted border px-3">AWAITING</span></td>
+                        </tr>
+                    `).join('') : '<tr><td colspan="4" class="text-center text-success fw-800 p-5">MISSION COMPLETE!</td></tr>';
+                }
+            };
+            gas.run('handleData').getLiveAttendance(currentEventId);
+        }
+
+        function resetUI() {
+            document.getElementById('currentEventTitle').textContent = 'LIVE MONITORING COMMAND';
+            document.getElementById('statTotal').textContent = '0';
+            document.getElementById('statCheckedIn').textContent = '0';
+            document.getElementById('statMissing').textContent = '0';
+            document.getElementById('checkedInBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted p-5">COMMAND WAITING...</td></tr>';
+            document.getElementById('missingBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted p-5">COMMAND WAITING...</td></tr>';
+        }
+    </script>
+</body>
+
+</html>

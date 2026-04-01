@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>互動終端 | Seed Pro+</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0c1120;
+            --accent-primary: #818cf8;
+            --accent-secondary: #c084fc;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-glow: 0 0 20px rgba(129, 140, 248, 0.5);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(129, 140, 248, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
+            font-family: "Outfit", "Noto Sans TC", sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            color: white;
+            overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .phone-mockup {
+            width: 90%;
+            max-width: 380px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 48px;
+            padding: 2.5rem 1.5rem;
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            position: relative;
+        }
+
+        .header-logo {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            letter-spacing: -2px;
+        }
+
+        .header-sub {
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0.5;
+            margin-bottom: 3rem;
+            font-weight: 700;
+        }
+
+        .input-group-custom {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .input-group-custom:focus-within {
+            border-color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 30px rgba(129, 140, 248, 0.2);
+        }
+
+        .input-group-custom input {
+            background: transparent;
+            border: none;
+            color: white;
+            width: 100%;
+            font-size: 1.2rem;
+            font-weight: 800;
+            text-align: center;
+            outline: none;
+            letter-spacing: 1px;
+        }
+
+        .btn-join {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: 20px;
+            padding: 1.2rem;
+            width: 100%;
+            color: white;
+            font-weight: 800;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(129, 140, 248, 0.3);
+        }
+
+        .btn-join:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+
+        /* Interaction Mode */
+        .user-info-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3rem;
+            text-align: left;
+        }
+
+        .user-details h5 {
+            margin: 0;
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+
+        .user-details p {
+            margin: 0;
+            font-size: 0.8rem;
+            opacity: 0.5;
+            font-weight: 600;
+        }
+
+        .points-pill {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            font-weight: 900;
+            border: 1px solid var(--glass-border);
+        }
+
+        .points-pill span {
+            color: var(--accent-primary);
+        }
+
+        .buzzer-container {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 0 auto 3rem;
+        }
+
+        .buzzer-btn {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 35% 35%, #ff5e57, #eb4d4b);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            color: white;
+            box-shadow:
+                0 0 0 10px rgba(235, 77, 75, 0.1),
+                0 20px 50px rgba(235, 77, 75, 0.4),
+                inset 0 10px 20px rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.1s;
+            position: relative;
+            z-index: 5;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .buzzer-btn:active {
+            transform: scale(0.92) translateY(5px);
+            box-shadow:
+                0 0 0 5px rgba(235, 77, 75, 0.2),
+                0 10px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .buzzer-btn.disabled {
+            filter: grayscale(1) brightness(0.5);
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .pulse-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(235, 77, 75, 0.3);
+            border-radius: 50%;
+            z-index: 1;
+            animation: buzzer-pulse 2s infinite;
+        }
+
+        @keyframes buzzer-pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.4;
+            }
+
+            100% {
+                transform: scale(1.6);
+                opacity: 0;
+            }
+        }
+
+        .connection-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+        }
+
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-color);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .orbit {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(129, 140, 248, 0.1);
+            border-top: 3px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading-screen">
+        <div class="orbit"></div>
+        <p class="mt-4 fw-bold opacity-50">SYNCING...</p>
+    </div>
+
+    <!-- Screen 1: Identification -->
+    <div class="phone-mockup" id="screen-login">
+        <div class="header-logo">SEED PRO+</div>
+        <div class="header-sub">Interactive Session</div>
+
+        <div class="mt-4">
+            <div class="input-group-custom">
+                <input type="text" id="agcode" placeholder="ENTER AGCODE" autocomplete="off" spellcheck="false">
+            </div>
+            <button class="btn-join" onclick="joinSession()">
+                JOIN SESSION <i class="bi bi-arrow-right-short"></i>
+            </button>
+        </div>
+
+        <div class="mt-5 opacity-30 small fw-bold">
+            <i class="bi bi-lock-fill me-1"></i> SECURE ACCESS
+        </div>
+    </div>
+
+    <!-- Screen 2: Controller -->
+    <div class="phone-mockup" id="screen-game" style="display:none;">
+        <div class="user-info-card">
+            <div class="user-details">
+                <h5 id="display-name">USER</h5>
+                <p id="display-group">GROUP</p>
+            </div>
+            <div class="points-pill">
+                <span>⚡</span> <span id="display-points">0</span>
+            </div>
+        </div>
+
+        <div class="buzzer-container">
+            <div class="buzzer-btn" id="buzzer" onclick="sendBuzzerSignal()">
+                <i class="bi bi-lightning-fill"></i>
+            </div>
+            <div class="pulse-layer"></div>
+        </div>
+
+        <h3 class="fw-900 mb-1">STAY SHARP!</h3>
+        <p class="small opacity-50 mb-4">Tap as soon as you see the cue.</p>
+
+        <div class="connection-status" id="status-display">
+            <span class="spinner-grow spinner-grow-sm text-info"></span> CONNECTING...
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz4kiWGCG96zZHAJgc-wOAaCxOkS7WXf5IriAEKk0StXYFNVlME7x2SjaSva3Rp8obX/exec';
+        let user = null;
+        let gameId = new URLSearchParams(window.location.search).get('gameId') || 'GLOBAL';
+        let peer = null;
+        let conn = null;
+
+        function setLoader(v) {
+            document.getElementById('loading-screen').style.display = v ? 'flex' : 'none';
+        }
+
+        async function joinSession() {
+            const agcode = document.getElementById('agcode').value.trim().toUpperCase();
+            if (!agcode) return;
+
+            setLoader(true);
+            try {
+                const response = await fetch(`${API_URL}?action=getPointsStatus&args=["${agcode}"]`);
+                const data = await response.json();
+                setLoader(false);
+
+                if (data.success) {
+                    user = {
+                        agcode: data.agcode,
+                        name: data.name,
+                        group: data.group,
+                        points: data.total
+                    };
+
+                    document.getElementById('display-name').textContent = data.name;
+                    document.getElementById('display-group').textContent = data.group;
+                    document.getElementById('display-points').textContent = data.total;
+
+                    document.getElementById('screen-login').style.display = 'none';
+                    document.getElementById('screen-game').style.display = 'block';
+
+                    initRealtime();
+                } else {
+                    alert('工號無效，請重新檢查。');
+                }
+            } catch (err) {
+                setLoader(false);
+                alert('連線失敗，請檢查網路狀態。');
+            }
+        }
+
+        function initRealtime() {
+            const status = document.getElementById('status-display');
+            peer = new Peer();
+
+            peer.on('open', (id) => {
+                conn = peer.connect('SEEDPRO_' + gameId);
+
+                conn.on('open', () => {
+                    status.innerHTML = '<i class="bi bi-wifi text-success"></i> ACTIVATED';
+                    if (window.navigator.vibrate) window.navigator.vibrate(100);
+                });
+
+                conn.on('close', () => {
+                    status.innerHTML = '<i class="bi bi-wifi-off text-danger"></i> DISCONNECTED';
+                });
+
+                conn.on('error', () => {
+                    status.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-danger"></i> ERROR';
+                });
+            });
+
+            peer.on('error', (err) => {
+                status.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i> CONNECTION FAILED';
+            });
+        }
+
+        function sendBuzzerSignal() {
+            if (!user || !conn || !conn.open) return;
+
+            const btn = document.getElementById('buzzer');
+            const status = document.getElementById('status-display');
+
+            btn.classList.add('disabled');
+            btn.innerHTML = '<i class="bi bi-check2"></i>';
+            status.innerHTML = '<i class="bi bi-send-check-fill text-info"></i> SIGNAL SENT!';
+
+            if (window.navigator.vibrate) window.navigator.vibrate([80, 50, 80]);
+
+            conn.send({ type: 'buzzer', user: user });
+
+            setTimeout(() => {
+                btn.classList.remove('disabled');
+                btn.innerHTML = '<i class="bi bi-lightning-fill"></i>';
+                status.innerHTML = '<i class="bi bi-wifi text-success"></i> READY';
+            }, 3000);
+        }
+
+        document.getElementById('agcode').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') joinSession();
+        });
+    </script>
+</body>
+
+</html>

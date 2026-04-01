@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教育訓練紀錄上傳</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #2d3436;
+            --accent-color: #0984e3;
+            --bg-body: #f1f2f6;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Main Card - 自動高度，移除 overflow */
+        .main-card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 550px;
+            /* 稍微加寬 */
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: auto;
+            /* 關鍵：隨內容長高 */
+            overflow: visible;
+            /* 關鍵：不隱藏溢出 */
+        }
+
+        /* Header */
+        .header-section {
+            background: var(--primary-color);
+            color: #fff;
+            padding: 25px 20px 35px 20px;
+            text-align: center;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .header-title {
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .header-sub {
+            opacity: 0.7;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+
+        .progress-pill {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 4px 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+        }
+
+        .step-dot.active {
+            background: #fff;
+            transform: scale(1.3);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        }
+
+        /* Stages - 改用 display 切換，不使用絕對定位 */
+        .stages-container {
+            padding: 30px;
+        }
+
+        .stage {
+            display: none;
+            /* 預設隱藏 */
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .stage.active {
+            display: block;
+        }
+
+        /* 啟動時顯示 */
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* User Profile Box */
+        .profile-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 16px;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            background: #dfe6e9;
+            color: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        /* Form Elements - 調整間距讓畫面不用滑太久 */
+        .form-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #b2bec3;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .form-control,
+        .form-select {
+            border: 2px solid #f1f2f6;
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 0.95rem;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: none;
+            background: #fff;
+        }
+
+        /* Buttons */
+        .btn-next {
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-top: 15px;
+            transition: transform 0.2s;
+        }
+
+        .btn-next:hover {
+            transform: translateY(-2px);
+            background: #000;
+            color: #fff;
+        }
+
+        .btn-back {
+            color: #b2bec3;
+            font-weight: 600;
+            background: none;
+            border: none;
+            font-size: 0.85rem;
+        }
+
+        .btn-back:hover {
+            color: var(--primary-color);
+        }
+
+        /* Loading Overlay */
+        #loader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 10;
+            border-radius: 24px;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="main-card">
+        <div id="loader">
+            <div class="spinner-border text-dark mb-3" role="status"></div>
+            <small class="text-muted fw-bold ls-1">處理中...</small>
+        </div>
+
+        <div class="header-section">
+            <h1 class="header-title"><i class="bi bi-file-earmark-check"></i> 訓練紀錄上傳</h1>
+            <div class="header-sub">Training Record Submission</div>
+            <div class="progress-pill">
+                <div class="step-dot active" id="dot-1"></div> STEP 1
+                <span class="mx-1 text-white-50">/</span>
+                STEP 2 <div class="step-dot" id="dot-2"></div>
+            </div>
+        </div>
+
+        <div class="stages-container">
+
+            <div class="stage active" id="stage1">
+                <div class="text-center mb-4">
+                    <h4 class="fw-bold text-dark">身分驗證</h4>
+                    <p class="text-muted small">請輸入AGCODE</p>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Employee ID</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-2 border-end-0"
+                            style="border-color:#f1f2f6; border-radius: 10px 0 0 10px;">
+                            <i class="bi bi-person-badge"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0 ps-0" id="empId" placeholder="Ex: 1001"
+                            style="border-radius: 0 10px 10px 0;">
+                    </div>
+                </div>
+
+                <button class="btn-next" onclick="checkIdentity()">下一步 Next <i class="bi bi-arrow-right"></i></button>
+            </div>
+
+            <div class="stage" id="stage2">
+
+                <div class="profile-box">
+                    <div class="avatar-circle" id="disp_avatar">?</div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold text-dark" id="disp_name">Loading...</div>
+                        <div class="small text-muted" id="disp_group">Loading...</div>
+                    </div>
+                    <button class="btn-back" onclick="goToStage(1)">更改</button>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">待訓課程 (Pending Course)</label>
+                    <select class="form-select" id="courseCode"></select>
+                    <div id="msg-all-done" class="text-success small mt-2 fw-bold" style="display:none;">
+                        <i class="bi bi-check-all"></i>該員已完成所有課程。
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">完訓日期</label>
+                        <input type="date" class="form-control" id="finishDate">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">方式</label>
+                        <select class="form-select" id="method">
+                            <option value="區訓">區訓</option>
+                            <option value="組訓">組訓</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">填表人（主管姓名）</label>
+                    <input type="text" class="form-control" id="filler" placeholder="您的姓名">
+                </div>
+
+                <button class="btn-next" id="btn-submit" onclick="submitData()">提交 Submit <i
+                        class="bi bi-send-fill"></i></button>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        /* Netlify API Shim */
+        const API_URL = "https://script.google.com/macros/s/AKfycbz4kiWGCG96zZHAJgc-wOAaCxOkS7WXf5IriAEKk0StXYFNVlME7x2SjaSva3Rp8obX/exec";
+        if (typeof google === 'undefined' || !google.script) {
+            window.google = { script: { run: new Proxy({ withSuccessHandler: function (f) { this._s = f; return this; }, withFailureHandler: function (f) { this._f = f; return this; } }, { get: function (t, p) { if (p in t) return t[p]; return function (...a) { fetch(API_URL, { method: 'POST', mode: 'cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: p, args: a }) }).then(r => r.json()).then(d => { if (d.error) { if (t._f) t._f(d.message || d.error) } else { if (t._s) t._s(d) } }).catch(e => { if (t._f) t._f(e.toString()) }) } } }) } }
+        };
+        // 初始化日期
+        document.getElementById('finishDate').valueAsDate = new Date();
+
+        // 階段切換邏輯 (使用 class active 控制 display)
+        function goToStage(n) {
+            const s1 = document.getElementById('stage1');
+            const s2 = document.getElementById('stage2');
+            const d1 = document.getElementById('dot-1');
+            const d2 = document.getElementById('dot-2');
+
+            if (n === 2) {
+                s1.classList.remove('active');
+                s2.classList.add('active');
+                d1.classList.remove('active');
+                d2.classList.add('active');
+            } else {
+                s1.classList.add('active');
+                s2.classList.remove('active');
+                d1.classList.add('active');
+                d2.classList.remove('active');
+                document.getElementById('courseCode').innerHTML = '';
+            }
+        }
+
+        function toggleLoader(show) {
+            document.getElementById('loader').style.display = show ? 'flex' : 'none';
+        }
+
+        // Step 1: 驗證身分
+        function checkIdentity() {
+            const id = document.getElementById('empId').value.trim();
+            if (!id) return alert("請輸入AGCODE");
+
+            toggleLoader(true);
+            google.script.run.withSuccessHandler(res => {
+                toggleLoader(false);
+                if (!res.found) {
+                    alert("查無此AGCODE，請確認後再試。人員異動請洽教委。");
+                    return;
+                }
+
+                document.getElementById('disp_name').innerText = res.name;
+                document.getElementById('disp_group').innerText = `${res.rank} / ${res.group}`;
+                document.getElementById('disp_avatar').innerText = res.name.charAt(0);
+
+                const select = document.getElementById('courseCode');
+                const submitBtn = document.getElementById('btn-submit');
+                const doneMsg = document.getElementById('msg-all-done');
+
+                select.innerHTML = '<option value="" disabled selected>請選擇課程...</option>';
+
+                if (res.pendingCourses.length === 0) {
+                    select.disabled = true;
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('btn-secondary');
+                    doneMsg.style.display = 'block';
+                } else {
+                    select.disabled = false;
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('btn-secondary');
+                    doneMsg.style.display = 'none';
+
+                    res.pendingCourses.forEach(c => {
+                        let opt = document.createElement('option');
+                        opt.value = c.code;
+                        opt.innerText = c.name;
+                        select.appendChild(opt);
+                    });
+                }
+                goToStage(2);
+            }).getPendingCoursesForForm(id);
+        }
+
+        // Step 2: 提交
+        function submitData() {
+            const data = {
+                empId: document.getElementById('empId').value,
+                empName: document.getElementById('disp_name').innerText,
+                courseCode: document.getElementById('courseCode').value,
+                finishDate: document.getElementById('finishDate').value,
+                method: document.getElementById('method').value,
+                filler: document.getElementById('filler').value
+            };
+
+            if (!data.courseCode) return alert("請選擇課程");
+            if (!data.finishDate) return alert("請選擇日期");
+            if (!data.filler) return alert("請輸入填表人");
+
+            toggleLoader(true);
+            google.script.run.withSuccessHandler(() => {
+                toggleLoader(false);
+                alert("✅ 成功！");
+                document.getElementById('empId').value = '';
+                goToStage(1);
+            }).processFormSubmission(data);
+        }
+
+        document.getElementById('empId').addEventListener("keypress", function (e) {
+            if (e.key === "Enter") checkIdentity();
+        });
+    </script>
+</body>
+
+</html>
