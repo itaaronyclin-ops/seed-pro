@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEED EVENT+ | Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="config.js" defer></script>
+    <script>
+        window.onerror = function (msg, url, line) {
+            // Filter out generic script errors (CORS/CDN/Network issues)
+            if (String(msg).indexOf('Script error') > -1 || (line === 0)) {
+                console.warn("Ext. Script Error:", url);
+                return true; // Suppress
+            }
+            console.error("系統錯誤:", msg, url, line);
+            // Only alert if it's not a known benign error
+            if (String(msg).includes('ResizeObserver')) return true;
+
+            // alert("系統錯誤: " + msg); // Optional: keep enabled for dev, disabled for prod if annoying
+            return false;
+        };
+    </script>
+    <!-- QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- Animations -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #f8fafc;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .active-tab {
+            border-bottom: 2px solid #0f172a;
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        .tab-btn {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 font-sans h-screen flex flex-col">
+    <!-- Global Loading Overlay -->
+    <div id="main-loading-overlay"
+        class="fixed inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-[100] hidden">
+        <div class="bg-white p-8 rounded-2xl flex flex-col items-center animate__animated animate__fadeIn">
+            <i class="fas fa-circle-notch fa-spin text-4xl text-blue-600 mb-4"></i>
+            <h3 class="text-lg font-bold text-slate-700">載入中... Please wait</h3>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen"
+        class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 animate__animated animate__fadeIn">
+        <div
+            class="bg-white p-10 rounded-2xl shadow-2xl w-96 transform transition-all animate__animated animate__zoomIn">
+            <h2 class="text-3xl font-bold mb-2 text-center text-slate-800 tracking-tight">SEED EVENT+</h2>
+            <p class="text-center text-gray-500 mb-8 text-sm">Admin Access</p>
+            <form id="login-form" class="space-y-4" onsubmit="handleLogin(event)">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">帳號 Username</label>
+                    <input type="text" id="username" required placeholder="admin"
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">密碼 Password</label>
+                    <input type="password" id="password" required placeholder="admin123"
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+
+                <!-- Debug / API Config -->
+                <div class="pt-2">
+                    <button type="button" onclick="document.getElementById('api-config-box').classList.toggle('hidden')"
+                        class="text-xs text-slate-400 hover:text-blue-500 underline">
+                        進階連線設定 (API Config)
+                    </button>
+                    <div id="api-config-box" class="hidden mt-2 p-3 bg-slate-100 rounded text-xs">
+                        <label class="block text-slate-500 mb-1">Backend API URL:</label>
+                        <input type="text" id="custom-api-url"
+                            class="w-full p-2 border rounded text-slate-600 font-mono text-xs"
+                            placeholder="Paste API URL here (https://script.google.com/...)"
+                            onchange="if(this.value) window.API_URL = this.value; console.log('API URL Updated:', window.API_URL)">
+                        <div class="mt-2 text-slate-400">若 config.js 載入失敗，或是看到 Script Error，請手動貼上網址。</div>
+                    </div>
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-black transition-all transform active:scale-95 shadow-lg hover:shadow-xl">
+                    登入系統 Login
+                </button>
+            </form>
+            <p class="mt-4 text-xs text-center text-gray-400">預設: admin / admin123</p>
+            <p class="mt-2 text-xs text-center text-slate-300 font-mono opacity-50">v1.2.0</p>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="dashboard" class="flex-1 flex flex-col hidden">
+        <!-- Top Navigation -->
+        <header class="bg-white/90 backdrop-blur shadow-sm z-10 sticky top-0 animate__animated animate__slideInDown">
+            <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-slate-800 tracking-tight">SEED EVENT+ <span id="user-role-display"
+                        class="text-blue-600 text-sm bg-blue-50 px-2 py-1 rounded-full ml-2 font-normal align-middle"></span>
+                </h1>
+                <div class="flex items-center space-x-6">
+                    <span id="user-name-display" class="text-sm font-medium text-slate-600"></span>
+                    <button onclick="logout()"
+                        class="text-sm text-red-500 hover:text-red-700 font-medium transition-colors">登出 Logout</button>
+                </div>
+            </div>
+            <div class="max-w-7xl mx-auto px-6 flex justify-end pb-4">
+                <button onclick="repairDatabase()" class="text-xs text-blue-600 hover:text-blue-800 underline">修復資料庫欄位
+                    (Repair DB)</button>
+            </div>
+            <!-- Tabs -->
+            <div class="max-w-7xl mx-auto px-6 flex space-x-8 border-t border-gray-100">
+                <button onclick="switchTab('events')" id="tab-events"
+                    class="tab-btn py-4 text-sm font-medium text-gray-400 hover:text-slate-800 active-tab">活動列表</button>
+                <button onclick="switchTab('create-event')" id="tab-create-event"
+                    class="tab-btn py-4 text-sm font-medium text-gray-400 hover:text-slate-800">建立活動</button>
+                <button onclick="switchTab('users')" id="tab-users"
+                    class="tab-btn py-4 text-sm font-medium text-gray-400 hover:text-slate-800">帳號 Users</button>
+                <button onclick="switchTab('scanner')" id="tab-scanner"
+                    class="tab-btn py-4 text-sm font-medium text-gray-400 hover:text-slate-800">QR 掃描</button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-auto bg-gray-100 p-6">
+
+            <!-- Overview View Removed -->
+            <div id="view-overview" class="hidden"></div>
+
+            <!-- Create Event View -->
+            <div id="view-create-event" class="max-w-7xl mx-auto space-y-8 hidden animate__animated animate__fadeIn">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="text-xl font-bold mb-6 text-slate-800">建立新活動</h3>
+                    <form id="create-event-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-400 uppercase">活動名稱</label>
+                            <input type="text" id="evt-name" required
+                                class="w-full p-3 bg-slate-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-400 uppercase">日期</label>
+                            <input type="date" id="evt-date" required
+                                class="w-full p-3 bg-slate-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-400 uppercase">地點</label>
+                            <input type="text" id="evt-loc" required
+                                class="w-full p-3 bg-slate-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-400 uppercase">價格</label>
+                            <input type="number" id="evt-price" required
+                                class="w-full p-3 bg-slate-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+                        <div class="md:col-span-2 space-y-1">
+                            <label class="text-xs font-bold text-slate-400 uppercase">活動圖片 (Image URL)</label>
+                            <input type="url" id="evt-image-url" placeholder="https://example.com/banner.jpg"
+                                class="w-full p-3 bg-slate-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+                        <div class="md:col-span-2 space-y-1">
+                            <label class="text-xs font-bold text-slate-400 uppercase">描述 (支援 HTML)</label>
+                            <textarea id="evt-desc"
+                                class="w-full p-3 bg-slate-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all font-mono text-sm"
+                                rows="5" placeholder="可輸入 HTML 標籤或是純文字"></textarea>
+                        </div>
+                        <div class="md:col-span-2 flex space-x-6 pt-2">
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="evt-enable-qr" class="sr-only peer" checked>
+                                <div
+                                    class="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                                </div>
+                                <span class="ms-3 text-sm font-medium text-slate-700">顯示 QR Code</span>
+                            </label>
+
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="evt-enable-checkin" class="sr-only peer">
+                                <div
+                                    class="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600">
+                                </div>
+                                <span class="ms-3 text-sm font-medium text-slate-700">開放報到 (Check-in)</span>
+                            </label>
+                        </div>
+
+                        <!-- Custom Fields Builder (Professional) -->
+                        <div class="md:col-span-2 p-6 rounded-xl bg-slate-50 border border-slate-200">
+                            <h4 class="font-bold mb-4 text-slate-800 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4">
+                                    </path>
+                                </svg>
+                                自訂報名表單欄位 (Custom Form Fields)
+                            </h4>
+
+                            <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm mb-4">
+                                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-3">
+                                    <div class="md:col-span-3">
+                                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">欄位名稱
+                                            Label</label>
+                                        <input type="text" id="new-field-label" placeholder="例如: 用餐習慣"
+                                            class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    </div>
+                                    <div class="md:col-span-3">
+                                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">類型
+                                            Type</label>
+                                        <select id="new-field-type" onchange="toggleFieldOptions()"
+                                            class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                            <option value="text">單行文字 (Text)</option>
+                                            <option value="textarea">多行文字 (Textarea)</option>
+                                            <option value="select">下拉選單 (Select)</option>
+                                            <option value="date">日期 (Date)</option>
+                                            <option value="email">Email</option>
+                                        </select>
+                                    </div>
+                                    <div class="md:col-span-4">
+                                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">選項 Options
+                                            (以逗號分隔)</label>
+                                        <input type="text" id="new-field-options" placeholder="葷, 素, 不吃牛" disabled
+                                            class="w-full p-2 bg-slate-100 border border-slate-200 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:text-slate-300">
+                                    </div>
+                                    <div class="md:col-span-2 flex items-end">
+                                        <div class="flex items-center h-10 pt-4">
+                                            <label class="inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" id="new-field-required" class="sr-only peer">
+                                                <div
+                                                    class="relative w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500">
+                                                </div>
+                                                <span class="ms-3 text-sm font-medium text-slate-600">必填
+                                                    (Required)</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="addCustomField()"
+                                    class="w-full py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors text-sm font-bold flex items-center justify-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    新增欄位 Add Field
+                                </button>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold text-slate-400 uppercase">目前欄位預覽</label>
+                                <ul id="custom-fields-list" class="space-y-2">
+                                    <!-- Dynamic Fields -->
+                                    <li
+                                        class="empty-state text-sm text-slate-400 text-center py-4 bg-slate-100 rounded-lg border border-dashed border-slate-300">
+                                        尚未新增任何自訂欄位
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                            class="bg-blue-600 text-white py-4 px-6 rounded-xl md:col-span-2 hover:bg-blue-700 font-bold tracking-wide shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-1">
+                            建立活動 Create Event
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Event List View -->
+            <div id="view-events" class="max-w-7xl mx-auto space-y-8 hidden animate__animated animate__fadeIn">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-6 border-b border-slate-100">
+                        <h3 class="text-xl font-bold text-slate-800">活動列表</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-100">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                        名稱</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                        日期</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                        狀態</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                        操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="events-list-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Events Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div id="view-users" class="max-w-7xl mx-auto space-y-6 hidden">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-bold mb-4">新增帳號</h3>
+                    <form id="create-user-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="new-u-username" placeholder="帳號 (Username)" required
+                            class="p-2 border rounded">
+                        <input type="text" id="new-u-password" placeholder="密碼 (Password)" required
+                            class="p-2 border rounded">
+                        <input type="text" id="new-u-name" placeholder="姓名 (Name)" required class="p-2 border rounded">
+                        <select id="new-u-role" class="p-2 border rounded" required>
+                            <option value="System Admin">系統管理員 (System Admin)</option>
+                            <option value="Finance Officer">財務人員 (Finance Officer)</option>
+                        </select>
+                        <button type="submit"
+                            class="bg-blue-600 text-white py-2 px-4 rounded md:col-span-2 hover:bg-blue-700">建立帳號</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Scanner View -->
+            <div id="view-scanner" class="max-w-md mx-auto hidden animate__animated animate__fadeIn">
+                <div
+                    class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 text-center relative overflow-hidden">
+                    <h3 class="text-xl font-bold mb-6 text-slate-800">QR Code 掃描器</h3>
+
+                    <div id="main-scanner-overlay"
+                        class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 z-20">
+                        <i class="fas fa-camera text-slate-400 text-5xl mb-4"></i>
+                        <button onclick="startScanner()"
+                            class="bg-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700 transition transform hover:scale-105 active:scale-95 flex items-center">
+                            <i class="fas fa-power-off mr-2"></i> 啟動相機
+                        </button>
+                    </div>
+
+                    <button onclick="stopScanner()" id="btn-stop-main-scanner"
+                        class="absolute top-4 right-4 bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs hidden z-30 hover:bg-red-200">
+                        關閉
+                    </button>
+
+                    <div id="reader"
+                        class="mx-auto border-2 border-slate-100 rounded-lg overflow-hidden mb-6 min-h-[300px] bg-black">
+                    </div>
+                    <p id="scan-result" class="text-sm font-medium text-slate-500 min-h-[20px]"></p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Create User Modal -->
+    <div id="create-user-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl p-8 max-w-sm w-full mx-4">
+            <h3 class="text-xl font-bold mb-4 text-slate-800">新增帳號</h3>
+            <form id="create-user-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">使用者名稱</label>
+                    <input type="text" id="new-u-username" required
+                        class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">密碼</label>
+                    <input type="password" id="new-u-password" required
+                        class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">姓名 (顯示用)</label>
+                    <input type="text" id="new-u-name" required
+                        class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">權限角色</label>
+                    <select id="new-u-role" class="w-full p-2 border border-slate-200 rounded-lg outline-none">
+                        <option value="Admin">系統管理員 (Admin)</option>
+                        <option value="Staff">工作人員 (Staff)</option>
+                    </select>
+                </div>
+                <div class="pt-4 flex justify-end space-x-3">
+                    <button type="button" onclick="document.getElementById('create-user-modal').classList.add('hidden')"
+                        class="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">取消</button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm btn-loading">建立</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Event Manager Modal -->
+    <div id="event-manager-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-7xl h-[95vh] flex flex-col m-4 overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-gray-100 px-6 py-4 flex justify-between items-center border-b">
+                <h3 class="text-xl font-bold text-gray-800" id="modal-event-title">活動管理</h3>
+                <button onclick="closeEventManager()"
+                    class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+
+            <!-- Modal Tabs -->
+            <div class="bg-white border-b px-6 flex space-x-6">
+                <button onclick="switchModalTab('info')" id="mtab-info"
+                    class="py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 transition-colors">基本資訊</button>
+                <button onclick="switchModalTab('regs')" id="mtab-regs"
+                    class="py-3 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors">報名名單</button>
+                <button onclick="switchModalTab('checkin')" id="mtab-checkin"
+                    class="py-3 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors flex items-center">
+                    <span>報到管理 (Console)</span>
+                    <span class="ml-2 bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full"
+                        id="tab-checkin-badge">Live</span>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="flex-1 overflow-auto p-6 bg-gray-50">
+
+                <!-- Info Tab -->
+                <div id="mview-info">
+                    <form id="edit-event-form" class="space-y-4 max-w-7xl mx-auto bg-white p-6 rounded shadow">
+                        <input type="hidden" id="edit-evt-id">
+                        <h4 class="font-bold text-gray-700 text-lg mb-4">編輯活動資訊</h4>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">名稱</label>
+                            <input type="text" id="edit-evt-name" required class="w-full mt-1 p-2 border rounded">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">日期</label>
+                            <input type="date" id="edit-evt-date" required class="w-full mt-1 p-2 border rounded">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">地點</label>
+                            <input type="text" id="edit-evt-loc" required class="w-full mt-1 p-2 border rounded">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">價格</label>
+                            <input type="number" id="edit-evt-price" required class="w-full mt-1 p-2 border rounded">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">活動圖片 (Image URL)</label>
+                            <input type="url" id="edit-evt-image-url" class="w-full mt-1 p-2 border rounded">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">描述 (HTML)</label>
+                            <textarea id="edit-evt-desc" class="w-full mt-1 p-2 border rounded font-mono text-sm"
+                                rows="5"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">狀態</label>
+                            <select id="edit-evt-status" class="w-full mt-1 p-2 border rounded">
+                                <option value="Closed">停止報名 (Closed)</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-6 pt-2">
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="edit-evt-enable-qr" class="sr-only peer">
+                                <div
+                                    class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                                </div>
+                                <span class="ms-3 text-sm font-medium text-gray-700">顯示 QR Code</span>
+                            </label>
+
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="edit-evt-enable-checkin" class="sr-only peer">
+                                <div
+                                    class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600">
+                                </div>
+                                <span class="ms-3 text-sm font-medium text-gray-700">開放報到 (Check-in)</span>
+                            </label>
+                        </div>
+                        <div class="pt-4 flex justify-end">
+                            <button type="submit"
+                                class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">儲存變更</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Registrations Tab -->
+                <div id="mview-regs" class="hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-600">
+                            已報名: <span id="reg-count-total" class="font-bold text-gray-900">-</span> |
+                            已付款: <span id="reg-count-paid" class="font-bold text-green-600">-</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="loadModalRegistrations()"
+                                class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">重新整理</button>
+                            <button onclick="downloadCSV()"
+                                class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">匯出 CSV
+                                (Export)</button>
+                        </div>
+                    </div>
+
+                    <!-- Registration Management List -->
+                    <div id="event-registrations-section">
+                        <div class="overflow-x-auto rounded-lg border border-slate-100">
+                            <table class="min-w-full divide-y divide-slate-100" id="registrations-table">
+                                <thead class="bg-slate-50" id="registrations-table-head">
+                                    <!-- Dynamic Header injected here -->
+                                </thead>
+                                <tbody id="registrations-list-body" class="bg-white divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Check-in Console Tab (New) -->
+            <div id="mview-checkin" class="hidden h-full flex flex-col">
+                <!-- Stats Dashboard (Live) -->
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">總報名</div>
+                        <div class="text-3xl font-black text-slate-800" id="console-total">-</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-green-100 bg-green-50 shadow-sm">
+                        <div class="text-xs text-green-600 uppercase font-bold tracking-wider mb-1">已報到</div>
+                        <div class="text-3xl font-black text-green-600" id="console-checked-in">-</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-orange-100 bg-orange-50 shadow-sm">
+                        <div class="text-xs text-orange-600 uppercase font-bold tracking-wider mb-1">未報到</div>
+                        <div class="text-3xl font-black text-orange-600" id="console-unchecked">-</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-blue-100 bg-blue-50 shadow-sm">
+                        <div class="text-xs text-blue-600 uppercase font-bold tracking-wider mb-1">報到率</div>
+                        <div class="text-3xl font-black text-blue-600" id="console-rate">0%</div>
+                    </div>
+                </div>
+
+                <!-- Scanner & Manual Check-in Area -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
+                    <!-- Left: Scanner -->
+                    <div
+                        class="bg-black rounded-2xl overflow-hidden relative shadow-lg flex flex-col items-center justify-center p-4 min-h-[400px]">
+
+                        <!-- Manual Start Overlay -->
+                        <div id="scanner-blocked-overlay"
+                            class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-20">
+                            <i class="fas fa-camera text-slate-700 text-6xl mb-4"></i>
+                            <button onclick="startConsoleScanner()"
+                                class="bg-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700 transition transform hover:scale-105 active:scale-95 flex items-center">
+                                <i class="fas fa-power-off mr-2"></i> 啟動掃描鏡頭
+                            </button>
+                            <p class="text-slate-500 text-xs mt-4">請允許瀏覽器存取相機權限</p>
+                        </div>
+
+                        <button onclick="stopConsoleScanner()" id="btn-stop-scanner"
+                            class="absolute top-4 right-4 bg-red-600/80 text-white px-3 py-1.5 rounded-full text-xs backdrop-blur-md hidden z-30 hover:bg-red-700 transition">
+                            <i class="fas fa-stop mr-1"></i> 關閉鏡頭
+                        </button>
+
+                        <div id="console-reader" class="w-full h-full max-h-[500px] bg-black"></div>
+                        <div
+                            class="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-xs backdrop-blur-md pointer-events-none">
+                            📷 鏡頭運作中
+                        </div>
+                        <!-- Scanner Status Overlay -->
+                        <div id="console-scan-status"
+                            class="absolute inset-0 flex items-center justify-center bg-black/80 hidden z-10">
+                            <span class="text-white font-medium animate-pulse">處理中...</span>
+                        </div>
+                    </div>
+
+                    <!-- Right: Recent Activity / Manual -->
+                    <div class="flex flex-col space-y-4">
+                        <!-- Manual Check-in Box -->
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <h4 class="font-bold text-slate-700 mb-2">手動報到 (Manual Check-in)</h4>
+                            <div class="flex space-x-2">
+                                <input type="tel" id="manual-checkin-phone" placeholder="輸入手機號碼 (Phone)"
+                                    class="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                                <button onclick="manualCheckIn()"
+                                    class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700">
+                                    報到
+                                </button>
+                            </div>
+                        </div>
+
+                        <div
+                            class="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden flex-1">
+                            <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                                <h4 class="font-bold text-slate-700">最近動態</h4>
+                                <span class="text-xs text-slate-400">實時更新</span>
+                            </div>
+                            <div id="console-activity-log" class="flex-1 overflow-y-auto p-4 space-y-3">
+                                <div class="text-center text-slate-400 py-10 text-sm">暫無報到紀錄</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    </div>
+
+<script>
+    let currentUser = null;
+    let currentEventId = null;
+    let customFields = [];
+
+    // Login System
+    async function handleLogin(e) {
+        e.preventDefault();
+        console.log("handleLogin triggered");
+
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+        const btn = e.target.querySelector('button[type="submit"]');
+        const statusDiv = document.getElementById('login-status') || createStatusDiv();
+
+        if (typeof setLoading === 'function') setLoading(true, btn);
+        else { if (btn) btn.innerText = "Loading..."; }
+
+        statusDiv.innerHTML = '<span class="text-blue-500">Connecting to server...</span>';
+
+        // Ensure API_URL
+        let targetUrl = typeof API_URL !== 'undefined' ? API_URL : '';
+        if (!targetUrl && window.API_URL) targetUrl = window.API_URL;
+        if (!targetUrl) targetUrl = "https://script.google.com/macros/s/AKfycbzlZcqnngOSiAvH-UnIj48B6p_RzM0nth1JQSY06gcRLfih0RIYYZUYuwIeBgPQAxYG/exec";
+
+        console.log("Login Target:", targetUrl);
+
+        try {
+            const response = await fetch(`${targetUrl}?action=checkLogin&username=${u}&password=${p}`);
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+
+            const text = await response.text();
+            console.log("Response raw:", text);
+
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (e) {
+                throw new Error("Invalid JSON response: " + text.substring(0, 100) + "...");
+            }
+
+            if (result.status === 'success') {
+                currentUser = result.user;
+                statusDiv.innerHTML = '<span class="text-green-500">Login Successful!</span>';
+                enterDashboard();
+            } else {
+                statusDiv.innerHTML = `<span class="text-red-500">Error: ${result.message}</span>`;
+                showPopup('登入失敗', result.message, 'error');
+            }
+        } catch (err) {
+            console.error("Login Error:", err);
+            statusDiv.innerHTML = `<span class="text-red-500 font-bold break-all">Connection Error: ${err.message}</span>`;
+            alert("系統錯誤 (Login Error):\n" + err.message);
+        } finally {
+            if (typeof setLoading === 'function') setLoading(false, btn);
+            else { if (btn) btn.innerText = "Login"; }
+        }
+    }
+
+    function createStatusDiv() {
+        const div = document.createElement('div');
+        div.id = 'login-status';
+        div.className = "mt-4 text-sm text-center font-mono p-2 bg-slate-50 rounded border border-slate-200";
+        document.getElementById('login-form').appendChild(div);
+        return div;
+    }
+
+    async function enterDashboard() {
+        try {
+            document.getElementById('main-loading-overlay').classList.remove('hidden');
+            if (!currentUser) throw new Error("User session invalid");
+
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+
+            document.getElementById('user-name-display').innerText = currentUser.name || 'User';
+            document.getElementById('user-role-display').innerText = currentUser.role || 'Staff';
+
+            document.getElementById('tab-users').classList.remove('hidden');
+
+            await loadOverview();
+            playAudio('popup');
+
+        } catch (e) {
+            console.error(e);
+            alert("載入 Dashboard 失敗: " + e.message);
+        } finally {
+            document.getElementById('main-loading-overlay').classList.add('hidden');
+        }
+    }
+
+    function logout() { location.reload(); }
+
+    // --- STUBS for Deleted Functions ---
+    async function loadOverview() { console.log("STUB: loadOverview"); }
+    function loadEvents() { console.log("STUB: loadEvents"); }
+    function setLoading(btn, state) { if (btn) btn.disabled = state; }
+    function playAudio() { }
+    function showPopup(t, m, type) { alert(t + ": " + m); }
+    function switchTab(t) { }
+
+</script>
+<script>
+    // Diagnostic Script (Runs separately)
+    (function () {
+        console.log("Diagnostic Script Running...");
+        const title = document.querySelector('h2');
+        if (!title) return;
+
+        const dot = document.createElement('span');
+        dot.style.fontSize = '12px';
+        dot.style.verticalAlign = 'top';
+        dot.style.marginLeft = '5px';
+        dot.style.fontWeight = 'bold';
+
+        // Check if Main Script Loaded
+        if (typeof handleLogin === 'function') {
+            dot.innerText = '●';
+            dot.style.color = '#22c55e'; // Green
+            dot.title = "System Ready";
+            console.log("System Ready");
+        } else {
+            dot.innerText = '●';
+            dot.style.color = '#ef4444'; // Red
+            dot.title = "Main Script CRASHED (Syntax Error)";
+            console.error("Main Script Crash Detected: handleLogin is undefined");
+
+            // Show Error Banner
+            const banner = document.createElement('div');
+            banner.className = "bg-red-500 text-white p-2 text-center text-xs font-bold fixed top-0 left-0 w-full z-50";
+            banner.innerText = "CRITICAL ERROR: Main Script Failed to Load. Check Console.";
+            document.body.appendChild(banner);
+        }
+        title.appendChild(dot);
+    })();
+</script>
+</body>
+
+</html>

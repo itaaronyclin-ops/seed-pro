@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Connectivity Debugger</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+
+        .box {
+            background: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .log {
+            background: #1e1e1e;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font-size: 12px;
+            height: 300px;
+            overflow-y: scroll;
+        }
+
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+
+        button:disabled {
+            background: #ccc;
+        }
+
+        input {
+            padding: 8px;
+            width: 300px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="box">
+        <h2>1. Configuration</h2>
+        <p>API URL: <input type="text" id="api-url"
+                value="https://script.google.com/macros/s/AKfycbzlZcqnngOSiAvH-UnIj48B6p_RzM0nth1JQSY06gcRLfih0RIYYZUYuwIeBgPQAxYG/exec">
+        </p>
+        <p>Test Credentials: <input type="text" id="user" value="admin"> / <input type="text" id="pass"
+                value="admin123"></p>
+        <button onclick="runDiagnostics()">Start Diagnostics</button>
+    </div>
+
+    <div class="box">
+        <h2>2. Diagnostics Log</h2>
+        <div id="logger" class="log">Ready...</div>
+    </div>
+
+    <div class="box">
+        <h2>3. Analysis</h2>
+        <div id="result">Waiting for test...</div>
+    </div>
+
+    <script>
+        function log(msg, type = 'info') {
+            const el = document.getElementById('logger');
+            const time = new Date().toLocaleTimeString();
+            el.innerHTML += `[${time}] ${msg}\n`;
+            el.scrollTop = el.scrollHeight;
+            console.log(msg);
+        }
+
+        async function runDiagnostics() {
+            const url = document.getElementById('api-url').value;
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+            const resultDiv = document.getElementById('result');
+
+            log("--- STARTING DIAGNOSTICS ---");
+            log(`Target URL: ${url}`);
+
+            resultDiv.innerHTML = "Running...";
+
+            try {
+                // Step 1: Basic Reachability (GET)
+                log("Step 1: Testing Basic Reachability (getEvents)...");
+                const t1 = Date.now();
+                const res1 = await fetch(`${url}?action=getEvents&limit=1`, { method: 'GET' });
+                const dur1 = Date.now() - t1;
+                log(`HTTP Status: ${res1.status} ${res1.statusText} (${dur1}ms)`);
+
+                if (!res1.ok) {
+                    throw new Error(`Server returned HTTP ${res1.status}`);
+                }
+
+                const text1 = await res1.text();
+                log(`Response First 100 chars: ${text1.substring(0, 100)}...`);
+
+                let json1;
+                try {
+                    json1 = JSON.parse(text1);
+                    log("JSON Parse: OK");
+                } catch (e) {
+                    log("JSON Parse: FAILED. Response might be HTML (Google Login Page?)", "error");
+                    throw new Error("Response is not valid JSON. Likely permissions issue.");
+                }
+
+                if (json1.status === 'success') {
+                    log("API Logic: OK (Returned success)");
+                } else {
+                    log(`API Logic: Warning (Status=${json1.status})`);
+                }
+
+                // Step 2: Login Test
+                log("\nStep 2: Testing Login Action...");
+                const loginUrl = `${url}?action=checkLogin&username=${u}&password=${p}`;
+                const t2 = Date.now();
+                const res2 = await fetch(loginUrl);
+                const text2 = await res2.text();
+                log(`Login Response: ${text2}`);
+
+                const json2 = JSON.parse(text2);
+                if (json2.status === 'success') {
+                    log("Login: SUCCESS! User found.");
+                    resultDiv.innerHTML = "<span class='success'>✅ System is Working. Credentials are correct.</span>";
+                } else {
+                    log(`Login: FAILED. Message: ${json2.message}`);
+                    resultDiv.innerHTML = "<span class='error'>❌ Connectivity OK, but Login Failed. Check credentials.</span>";
+                }
+
+            } catch (err) {
+                log(`\nCRITICAL ERROR: ${err.message}`, "error");
+                if (err.message.includes("Failed to fetch")) {
+                    resultDiv.innerHTML = "<span class='error'>❌ Network/CORS Error. Browser blocked the request.</span><br>Advice: Do not open from file://. Use a local server.";
+                } else if (err.message.includes("valid JSON")) {
+                    resultDiv.innerHTML = "<span class='error'>❌ API Permissions Error.</span><br>Advice: Redeploy as 'Anyone' access.";
+                } else {
+                    resultDiv.innerHTML = `<span class='error'>❌ Error: ${err.message}</span>`;
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
